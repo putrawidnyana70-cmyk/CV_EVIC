@@ -87,40 +87,27 @@ let masterProduk = [];
 let pembelian = [];
 let penjualan = [];
 
-/* =========================================================
-   DATE PARSER (FINAL – FIX UTC → WIB)
-   ========================================================= */
+/* =====================================================
+   DATE PARSER (FINAL – ISO UTC DARI GAS)
+   ===================================================== */
 function parseSheetDate(tgl) {
   if (!tgl) return null;
 
-  // ISO UTC dari Apps Script (....Z)
+  // ISO UTC: 2025-12-31T16:00:00.000Z
   if (typeof tgl === "string" && tgl.endsWith("Z")) {
     const d = new Date(tgl);
-
-    // ambil UTC, lalu GESER +7 JAM (WIB)
-    d.setUTCHours(d.getUTCHours() + 7);
-
     return {
       tahun: d.getUTCFullYear(),
       bulan: d.getUTCMonth() + 1
     };
   }
 
-  // Date object
-  if (tgl instanceof Date) {
-    return {
-      tahun: tgl.getFullYear(),
-      bulan: tgl.getMonth() + 1
-    };
-  }
-
-  // fallback text: "1 Januari 2026"
+  // fallback teks manual
   const s = String(tgl).toLowerCase().trim();
   const map = {
     januari:1,februari:2,maret:3,april:4,mei:5,juni:6,
     juli:7,agustus:8,september:9,oktober:10,november:11,desember:12
   };
-
   const p = s.split(" ");
   if (p.length >= 3 && map[p[1]]) {
     return { tahun: +p[2], bulan: map[p[1]] };
@@ -137,24 +124,31 @@ fetch(API_URL)
     pembelian = data.pembelian || [];
     penjualan = data.penjualan || [];
 
-    filterBulan.value = "1"; // default Januari
+    // 🔹 otomatis pilih bulan saat web dibuka
+    const now = new Date();
+    filterBulan.value = String(now.getMonth() + 1);
+
     render();
   })
   .catch(err => console.error("API error:", err));
 
-/* =========================================================
-   RENDER – ROLLING STOK BULANAN (AKUNTANSI BENAR)
-   ========================================================= */
+/* =====================================================
+   RENDER – ROLLING STOK BULANAN (FINAL)
+   ===================================================== */
 function render() {
   tbody.innerHTML = "";
   const bulanDipilih = Number(filterBulan.value) || 1;
 
-  masterProduk.forEach(mp => {
-    const sku = String(mp[0] || mp.SKU || "").trim();
-    if (!sku) return;
+  masterProduk.forEach((mp, idx) => {
 
-    const nama = mp[1] || mp.Produk || "-";
-    let stok = Number(mp[2] || mp.StokAwal || mp.SaldoAwal) || 0;
+    /* === SKIP HEADER MASTER PRODUK === */
+    if (idx === 0) return;
+
+    const sku = String(mp[0] || "").trim();
+    if (!sku || sku.toLowerCase() === "sku") return;
+
+    const nama = mp[1] || "-";
+    let stok = Number(mp[2]) || 0;
 
     let saldoAwal = stok;
     let masuk = 0;
@@ -165,20 +159,24 @@ function render() {
       let beliBulan = 0;
       let jualBulan = 0;
 
-      // PEMBELIAN
+      // ===== PEMBELIAN =====
       pembelian.forEach(p => {
-        const d = parseSheetDate(p[0]); // tanggal
+        const d = parseSheetDate(p[0]);
         if (!d || d.tahun !== TAHUN_AKTIF) return;
         if (String(p[5]).trim() !== sku) return;
-        if (d.bulan === b) beliBulan += Number(p[4]) || 0;
+        if (d.bulan === b) {
+          beliBulan += Number(p[4]) || 0;
+        }
       });
 
-      // PENJUALAN
+      // ===== PENJUALAN =====
       penjualan.forEach(p => {
         const d = parseSheetDate(p[0]);
         if (!d || d.tahun !== TAHUN_AKTIF) return;
         if (String(p[5]).trim() !== sku) return;
-        if (d.bulan === b) jualBulan += Number(p[4]) || 0;
+        if (d.bulan === b) {
+          jualBulan += Number(p[4]) || 0;
+        }
       });
 
       // simpan hanya bulan aktif
