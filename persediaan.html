@@ -31,8 +31,25 @@
 
         <!-- SEARCH -->
         <div class="filter-bar">
-            <input type="text" id="searchStock" placeholder="Cari SKU atau Nama Produk">
-        </div>
+  <input type="text" id="searchStock" placeholder="Cari SKU atau Nama Produk">
+
+
+  <select id="filterBulan">
+    <option value="">Semua Bulan</option>
+    <option value="1">Januari</option>
+    <option value="2">Februari</option>
+    <option value="3">Maret</option>
+    <option value="4">April</option>
+    <option value="5">Mei</option>
+    <option value="6">Juni</option>
+    <option value="7">Juli</option>
+    <option value="8">Agustus</option>
+    <option value="9">September</option>
+    <option value="10">Oktober</option>
+    <option value="11">November</option>
+    <option value="12">Desember</option>
+  </select>
+</div>
 
         <!-- TABLE -->
         <div class="table-container">
@@ -56,65 +73,154 @@
 </div>
 
 <script>
-const API_URL = "https://script.google.com/macros/s/AKfycbz17HxhRGYKJdb7Iq_W7mCYUG3_gQbJMUJ61k4URCb_c343VlxnykmbgaxM_V5QizNb/exec";
+/* ================= KONFIG ================= */
+const API_URL = "https://script.google.com/macros/s/AKfycbw7rTjjw37nRJ9kgQLHWSdfnO-1qLrjB6Z6yHF1yA8scm4CmZ3PrK49TXb-EB32tBWl/exec";
+const TAHUN_AKTIF = 2026;
 
-const searchStock = document.getElementById("searchStock");
+/* ================= DOM ================= */
 const tbody = document.getElementById("stokBody");
+const filterBulan = document.getElementById("filterBulan");
+const searchStock = document.getElementById("searchStock");
 
-fetch(API_URL)
-  .then(res => res.json())
-  .then(data => {
-    const rows = data.persediaan;
+/* ================= DATA ================= */
+let masterProduk = [];
+let pembelian = [];
+let penjualan = [];
 
-    rows.slice(1).forEach(item => {
-      const [sku, produk, saldoAwal, stokMasuk, stokKeluar, stokAkhir] = item;
-      if (!sku) return;
+/* =========================================================
+   DATE PARSER (FINAL – FIX UTC → WIB)
+   ========================================================= */
+function parseSheetDate(tgl) {
+  if (!tgl) return null;
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${sku}</td>
-        <td>${produk}</td>
-        <td>${saldoAwal}</td>
-        <td>${stokMasuk}</td>
-        <td>${stokKeluar}</td>
-        <td class="stock-value">${stokAkhir}</td>
-      `;
-      tbody.appendChild(tr);
-    });
+  // ISO UTC dari Apps Script (....Z)
+  if (typeof tgl === "string" && tgl.endsWith("Z")) {
+    const d = new Date(tgl);
 
-    applyStockColor();
-    enableSearch();
-  })
-  .catch(err => console.error(err));
+    // ambil UTC, lalu GESER +7 JAM (WIB)
+    d.setUTCHours(d.getUTCHours() + 7);
 
-function applyStockColor() {
-  document.querySelectorAll(".stock-value").forEach(cell => {
-    const stock = parseInt(cell.innerText);
-    cell.classList.remove("stock-safe","stock-warning","stock-danger");
+    return {
+      tahun: d.getUTCFullYear(),
+      bulan: d.getUTCMonth() + 1
+    };
+  }
 
-    if (stock <= 20) {
-      cell.classList.add("stock-danger");
-    } else if (stock <= 100) {
-      cell.classList.add("stock-warning");
-    } else {
-      cell.classList.add("stock-safe");
-    }
-  });
+  // Date object
+  if (tgl instanceof Date) {
+    return {
+      tahun: tgl.getFullYear(),
+      bulan: tgl.getMonth() + 1
+    };
+  }
+
+  // fallback text: "1 Januari 2026"
+  const s = String(tgl).toLowerCase().trim();
+  const map = {
+    januari:1,februari:2,maret:3,april:4,mei:5,juni:6,
+    juli:7,agustus:8,september:9,oktober:10,november:11,desember:12
+  };
+
+  const p = s.split(" ");
+  if (p.length >= 3 && map[p[1]]) {
+    return { tahun: +p[2], bulan: map[p[1]] };
+  }
+
+  return null;
 }
 
-function enableSearch() {
-  searchStock.addEventListener("keyup", () => {
-    const keyword = searchStock.value.toLowerCase();
-    document.querySelectorAll("#stokBody tr").forEach(row => {
-      const sku = row.children[0].innerText.toLowerCase();
-      const produk = row.children[1].innerText.toLowerCase();
-      row.style.display =
-        sku.includes(keyword) || produk.includes(keyword)
+/* ================= FETCH ================= */
+fetch(API_URL)
+  .then(r => r.json())
+  .then(data => {
+    masterProduk = data.masterProduk || [];
+    pembelian = data.pembelian || [];
+    penjualan = data.penjualan || [];
+
+    filterBulan.value = "1"; // default Januari
+    render();
+  })
+  .catch(err => console.error("API error:", err));
+
+/* =========================================================
+   RENDER – ROLLING STOK BULANAN (AKUNTANSI BENAR)
+   ========================================================= */
+function render() {
+  tbody.innerHTML = "";
+  const bulanDipilih = Number(filterBulan.value) || 1;
+
+  masterProduk.forEach(mp => {
+    const sku = String(mp[0] || mp.SKU || "").trim();
+    if (!sku) return;
+
+    const nama = mp[1] || mp.Produk || "-";
+    let stok = Number(mp[2] || mp.StokAwal || mp.SaldoAwal) || 0;
+
+    let saldoAwal = stok;
+    let masuk = 0;
+    let keluar = 0;
+
+    // hitung dari Januari → bulan dipilih
+    for (let b = 1; b <= bulanDipilih; b++) {
+      let beliBulan = 0;
+      let jualBulan = 0;
+
+      // PEMBELIAN
+      pembelian.forEach(p => {
+        const d = parseSheetDate(p[0]); // tanggal
+        if (!d || d.tahun !== TAHUN_AKTIF) return;
+        if (String(p[5]).trim() !== sku) return;
+        if (d.bulan === b) beliBulan += Number(p[4]) || 0;
+      });
+
+      // PENJUALAN
+      penjualan.forEach(p => {
+        const d = parseSheetDate(p[0]);
+        if (!d || d.tahun !== TAHUN_AKTIF) return;
+        if (String(p[5]).trim() !== sku) return;
+        if (d.bulan === b) jualBulan += Number(p[4]) || 0;
+      });
+
+      // simpan hanya bulan aktif
+      if (b === bulanDipilih) {
+        saldoAwal = stok;
+        masuk = beliBulan;
+        keluar = jualBulan;
+      }
+
+      stok += beliBulan - jualBulan;
+    }
+
+    tbody.innerHTML += `
+      <tr>
+        <td>${sku}</td>
+        <td>${nama}</td>
+        <td>${saldoAwal}</td>
+        <td>${masuk}</td>
+        <td>${keluar}</td>
+        <td><b>${stok}</b></td>
+      </tr>
+    `;
+  });
+
+  applySearch();
+}
+
+/* ================= SEARCH ================= */
+function applySearch() {
+  const key = searchStock.value.toLowerCase();
+  document.querySelectorAll("#stokBody tr").forEach(r => {
+    r.style.display =
+      r.children[0].innerText.toLowerCase().includes(key) ||
+      r.children[1].innerText.toLowerCase().includes(key)
         ? ""
         : "none";
-    });
   });
 }
+
+/* ================= EVENT ================= */
+filterBulan.addEventListener("change", render);
+searchStock.addEventListener("keyup", applySearch);
 </script>
 
 </body>
