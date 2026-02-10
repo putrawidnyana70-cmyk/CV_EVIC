@@ -6,7 +6,11 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
+<!-- LOADING -->
+<div id="loading">
+  <img src="logo.jpg" alt="Loading">
+  <p>Memuat data...</p>
+</div>
 <div class="app">
     <!-- SIDEBAR -->
     <aside class="sidebar">
@@ -81,11 +85,24 @@ const TAHUN_AKTIF = 2026;
 const tbody = document.getElementById("stokBody");
 const filterBulan = document.getElementById("filterBulan");
 const searchStock = document.getElementById("searchStock");
+const loading = document.getElementById("loading");
 
 /* ================= DATA ================= */
 let masterProduk = [];
 let pembelian = [];
 let penjualan = [];
+
+/* ================= LOADING CONTROL ================= */
+function showLoading() {
+  loading.style.display = "flex";
+  loading.style.opacity = "1";
+  loading.style.pointerEvents = "auto";
+}
+function hideLoading() {
+  loading.style.opacity = "0";
+  loading.style.pointerEvents = "none";
+  setTimeout(() => loading.style.display = "none", 300);
+}
 
 /* =====================================================
    DATE PARSER (FINAL – ISO UTC DARI GAS)
@@ -93,7 +110,6 @@ let penjualan = [];
 function parseSheetDate(tgl) {
   if (!tgl) return null;
 
-  // ISO UTC: 2025-12-31T16:00:00.000Z
   if (typeof tgl === "string" && tgl.endsWith("Z")) {
     const d = new Date(tgl);
     return {
@@ -102,7 +118,6 @@ function parseSheetDate(tgl) {
     };
   }
 
-  // fallback teks manual
   const s = String(tgl).toLowerCase().trim();
   const map = {
     januari:1,februari:2,maret:3,april:4,mei:5,juni:6,
@@ -117,6 +132,8 @@ function parseSheetDate(tgl) {
 }
 
 /* ================= FETCH ================= */
+showLoading();
+
 fetch(API_URL)
   .then(r => r.json())
   .then(data => {
@@ -124,25 +141,27 @@ fetch(API_URL)
     pembelian = data.pembelian || [];
     penjualan = data.penjualan || [];
 
-    // 🔹 otomatis pilih bulan saat web dibuka
+    // otomatis pilih bulan saat web dibuka
     const now = new Date();
     filterBulan.value = String(now.getMonth() + 1);
 
     render();
+    hideLoading();
   })
-  .catch(err => console.error("API error:", err));
+  .catch(err => {
+    console.error("API error:", err);
+    hideLoading();
+  });
 
 /* =====================================================
-   RENDER – ROLLING STOK BULANAN (FINAL)
+   RENDER – ROLLING STOK BULANAN
    ===================================================== */
 function render() {
   tbody.innerHTML = "";
   const bulanDipilih = Number(filterBulan.value) || 1;
 
   masterProduk.forEach((mp, idx) => {
-
-    /* === SKIP HEADER MASTER PRODUK === */
-    if (idx === 0) return;
+    if (idx === 0) return; // skip header
 
     const sku = String(mp[0] || "").trim();
     if (!sku || sku.toLowerCase() === "sku") return;
@@ -154,32 +173,24 @@ function render() {
     let masuk = 0;
     let keluar = 0;
 
-    // hitung dari Januari → bulan dipilih
     for (let b = 1; b <= bulanDipilih; b++) {
       let beliBulan = 0;
       let jualBulan = 0;
 
-      // ===== PEMBELIAN =====
       pembelian.forEach(p => {
         const d = parseSheetDate(p[0]);
         if (!d || d.tahun !== TAHUN_AKTIF) return;
         if (String(p[5]).trim() !== sku) return;
-        if (d.bulan === b) {
-          beliBulan += Number(p[4]) || 0;
-        }
+        if (d.bulan === b) beliBulan += Number(p[4]) || 0;
       });
 
-      // ===== PENJUALAN =====
       penjualan.forEach(p => {
         const d = parseSheetDate(p[0]);
         if (!d || d.tahun !== TAHUN_AKTIF) return;
         if (String(p[5]).trim() !== sku) return;
-        if (d.bulan === b) {
-          jualBulan += Number(p[4]) || 0;
-        }
+        if (d.bulan === b) jualBulan += Number(p[4]) || 0;
       });
 
-      // simpan hanya bulan aktif
       if (b === bulanDipilih) {
         saldoAwal = stok;
         masuk = beliBulan;
@@ -217,7 +228,14 @@ function applySearch() {
 }
 
 /* ================= EVENT ================= */
-filterBulan.addEventListener("change", render);
+filterBulan.addEventListener("change", () => {
+  showLoading();
+  setTimeout(() => {
+    render();
+    hideLoading();
+  }, 200);
+});
+
 searchStock.addEventListener("keyup", applySearch);
 </script>
 

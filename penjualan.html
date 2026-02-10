@@ -6,7 +6,11 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
+<!-- LOADING -->
+<div id="loading">
+  <img src="logo.jpg" alt="Loading">
+  <p>Memuat data...</p>
+</div>
 <div class="app">
     <!-- SIDEBAR -->
     <aside class="sidebar">
@@ -82,10 +86,11 @@ const tbody = document.getElementById("penjualanBody");
 const filterOutlet = document.getElementById("filterOutlet");
 const filterProduk = document.getElementById("filterProduk");
 const filterBulan  = document.getElementById("filterBulan");
+const loading = document.getElementById("loading");
 
-let allPenjualan = []; // SIMPAN DATA ASLI DI SINI
+let allPenjualan = []; // DATA ASLI
 
-// ===== FETCH DATA =====
+/* ================= FETCH DATA ================= */
 fetch(API_URL)
   .then(res => res.json())
   .then(data => {
@@ -93,11 +98,29 @@ fetch(API_URL)
 
     isiDropdown();
     setDefaultBulan();
-    renderTable(allPenjualan); // render awal
-  })
-  .catch(err => console.error("API error:", err));
+    applyFilter(); // render awal sesuai bulan
 
-// ===== ISI DROPDOWN =====
+    hideLoading();
+  })
+  .catch(err => {
+    console.error("API error:", err);
+    hideLoading();
+  });
+
+/* ================= LOADING ================= */
+function hideLoading() {
+  loading.style.opacity = "0";
+  loading.style.pointerEvents = "none";
+  setTimeout(() => loading.style.display = "none", 300);
+}
+
+function showLoading() {
+  loading.style.display = "flex";
+  loading.style.opacity = "1";
+  loading.style.pointerEvents = "auto";
+}
+
+/* ================= DROPDOWN ================= */
 function isiDropdown() {
   const outletSet = new Set();
   const produkSet = new Set();
@@ -121,15 +144,14 @@ function fillSelect(select, setData) {
   });
 }
 
-// ===== DEFAULT BULAN SEKARANG =====
+/* ================= DEFAULT BULAN ================= */
 function setDefaultBulan() {
   filterBulan.value = new Date().getMonth() + 1;
 }
 
-// ===== RENDER TABLE (CEPAT) =====
+/* ================= RENDER TABLE ================= */
 function renderTable(data) {
   tbody.innerHTML = "";
-
   const fragment = document.createDocumentFragment();
 
   data.forEach(row => {
@@ -150,33 +172,38 @@ function renderTable(data) {
   tbody.appendChild(fragment);
 }
 
-// ===== FILTER DATA (CEPAT) =====
+/* ================= FILTER DATA ================= */
 function applyFilter() {
-  const outletVal = filterOutlet.value;
-  const produkVal = filterProduk.value;
-  const bulanVal  = filterBulan.value;
+  showLoading();
 
-  const filtered = allPenjualan.filter(row => {
-    const tanggal = new Date(row[0]);
-    const bulan   = tanggal.getMonth() + 1;
+  setTimeout(() => {
+    const outletVal = filterOutlet.value;
+    const produkVal = filterProduk.value;
+    const bulanVal  = filterBulan.value;
 
-    const okOutlet = !outletVal || row[2] === outletVal;
-    const okProduk = !produkVal || row[3] === produkVal;
-    const okBulan  = !bulanVal  || bulan == bulanVal;
+    const filtered = allPenjualan.filter(row => {
+      const tanggal = new Date(row[0]);
+      const bulan   = tanggal.getMonth() + 1;
 
-    return okOutlet && okProduk && okBulan;
-  });
+      const okOutlet = !outletVal || row[2] === outletVal;
+      const okProduk = !produkVal || row[3] === produkVal;
+      const okBulan  = !bulanVal  || bulan == bulanVal;
 
-  renderTable(filtered);
+      return okOutlet && okProduk && okBulan;
+    });
+
+    renderTable(filtered);
+    hideLoading();
+  }, 200); // efek loading halus
 }
 
-// ===== FORMAT TANGGAL =====
+/* ================= FORMAT TANGGAL ================= */
 function formatTanggal(value) {
   const d = new Date(value);
   return `${String(d.getDate()).padStart(2,"0")}-${String(d.getMonth()+1).padStart(2,"0")}-${d.getFullYear()}`;
 }
 
-// ===== EVENT =====
+/* ================= EVENT ================= */
 filterOutlet.addEventListener("change", applyFilter);
 filterProduk.addEventListener("change", applyFilter);
 filterBulan.addEventListener("change", applyFilter);

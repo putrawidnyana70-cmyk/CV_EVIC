@@ -148,3 +148,33 @@ tbody tr:hover {
 .chart-box canvas {
     display: block;
 }
+/* ===== LOADING SCREEN ===== */
+#loading {
+  position: fixed;
+  inset: 0;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+#loading img {
+  width: 120px;
+  margin-bottom: 15px;
+  animation: pulse 1.5s infinite ease-in-out;
+}
+
+#loading p {
+  font-size: 14px;
+  color: #555;
+  letter-spacing: 1px;
+}
+
+/* animasi logo */
+@keyframes pulse {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  50%  { transform: scale(1.1); opacity: 1;   }
+  100% { transform: scale(1);   opacity: 0.6; }
+}

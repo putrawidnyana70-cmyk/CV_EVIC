@@ -6,7 +6,11 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
+    <!-- LOADING -->
+<div id="loading">
+  <img src="logo.jpg" alt="Loading">
+  <p>Memuat data...</p>
+</div>
     <div class="app">
         <!-- SIDEBAR -->
         <aside class="sidebar">
@@ -89,6 +93,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbwIqSQFXk6RxujXRxSRHmnP
 ======================= */
 const filterProduk = document.getElementById("filterProduk");
 const filterBulan  = document.getElementById("filterBulan");
+const loading      = document.getElementById("loading");
 
 const totalProdukEl       = document.getElementById("totalProduk");
 const totalStokEl         = document.getElementById("totalStok");
@@ -96,43 +101,64 @@ const totalPenjualanEl    = document.getElementById("totalPenjualan");
 const totalPenjualanRpEl  = document.getElementById("totalPenjualanRp");
 
 /* =======================
-   STATE (DIPISAH JELAS)
+   STATE
 ======================= */
-let penjualanRaw   = [];   // data mentah (UNTUK GRAFIK)
+let penjualanRaw   = [];
 let persediaan     = [];
-let hargaMap       = {};   // { SKU: hargaJual }
+let hargaMap       = {};
 let chart          = null;
+
+/* =======================
+   LOADING CONTROL
+======================= */
+function showLoading() {
+  loading.style.display = "flex";
+  loading.style.opacity = "1";
+  loading.style.pointerEvents = "auto";
+}
+
+function hideLoading() {
+  loading.style.opacity = "0";
+  loading.style.pointerEvents = "none";
+  setTimeout(() => loading.style.display = "none", 300);
+}
 
 /* =======================
    FETCH DATA (1x SAJA)
 ======================= */
+showLoading();
+
 fetch(API_URL)
   .then(res => res.json())
   .then(data => {
     penjualanRaw = (data.penjualan || []).slice(1);
     persediaan   = (data.persediaan || []).slice(1);
 
-    // MASTER HARGA → MAP
+    // MASTER HARGA
     const masterHarga = (data.masterHarga || []).slice(1);
     masterHarga.forEach(r => {
       const sku = r[0];
-      const hargaJual = Number(r[3]) || 0; // kolom Harga Jual
+      const hargaJual = Number(r[3]) || 0;
       if (sku) hargaMap[sku] = hargaJual;
     });
 
     initFilterBulan();
     isiDropdownProduk();
 
-    buildChartOnce(); // 🔒 GRAFIK GLOBAL (1x)
-    updateKPI();      // 🔄 KPI TERFILTER
+    buildChartOnce(); // grafik 1x
+    updateKPI();      // KPI awal
+
+    hideLoading();
   })
-  .catch(err => console.error("API Error:", err));
+  .catch(err => {
+    console.error("API Error:", err);
+    hideLoading();
+  });
 
 /* =======================
    INIT FILTER
 ======================= */
 function initFilterBulan() {
-  // default = bulan sekarang (UTC-safe)
   filterBulan.value = new Date().getUTCMonth() + 1;
 }
 
@@ -149,59 +175,63 @@ function isiDropdownProduk() {
 }
 
 /* =======================
-   KPI (TERFILTER PRODUK & BULAN)
+   KPI (TERFILTER)
 ======================= */
 function updateKPI() {
-  const produkDipilih = filterProduk.value;
-  const bulanDipilih  = filterBulan.value; // 1..12 atau ""
+  showLoading();
 
-  let totalQty = 0;
-  let totalRp  = 0;
-  const produkSet = new Set();
+  setTimeout(() => {
+    const produkDipilih = filterProduk.value;
+    const bulanDipilih  = filterBulan.value;
 
-  penjualanRaw.forEach(r => {
-    const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
+    let totalQty = 0;
+    let totalRp  = 0;
+    const produkSet = new Set();
 
-    const produk = r[3];
-    const qty    = Number(r[4]) || 0;
-    const sku    = r[5]; // pastikan index SKU benar
-    const harga  = hargaMap[sku] || 0;
+    penjualanRaw.forEach(r => {
+      const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
 
-    const okProduk = !produkDipilih || produk === produkDipilih;
-    const okBulan  = !bulanDipilih  || bulanUTC == bulanDipilih;
+      const produk = r[3];
+      const qty    = Number(r[4]) || 0;
+      const sku    = r[5];
+      const harga  = hargaMap[sku] || 0;
 
-    if (okProduk && okBulan) {
-      totalQty += qty;
-      totalRp  += qty * harga;
-      produkSet.add(produk);
-    }
-  });
+      const okProduk = !produkDipilih || produk === produkDipilih;
+      const okBulan  = !bulanDipilih  || bulanUTC == bulanDipilih;
 
-  let totalStok = 0;
-  persediaan.forEach(r => {
-    const produk = r[1];
-    const stok   = Number(r[5]) || 0;
-    if (!produkDipilih || produk === produkDipilih) {
-      totalStok += stok;
-    }
-  });
+      if (okProduk && okBulan) {
+        totalQty += qty;
+        totalRp  += qty * harga;
+        produkSet.add(produk);
+      }
+    });
 
-  totalProdukEl.textContent      = produkSet.size || 0;
-  totalStokEl.textContent        = totalStok;
-  totalPenjualanEl.textContent   = totalQty;
-  totalPenjualanRpEl.textContent = "Rp " + totalRp.toLocaleString("id-ID");
+    let totalStok = 0;
+    persediaan.forEach(r => {
+      const produk = r[1];
+      const stok   = Number(r[5]) || 0;
+      if (!produkDipilih || produk === produkDipilih) {
+        totalStok += stok;
+      }
+    });
+
+    totalProdukEl.textContent      = produkSet.size || 0;
+    totalStokEl.textContent        = totalStok;
+    totalPenjualanEl.textContent   = totalQty;
+    totalPenjualanRpEl.textContent = "Rp " + totalRp.toLocaleString("id-ID");
+
+    hideLoading();
+  }, 200);
 }
 
 /* =======================
-   GRAFIK (GLOBAL, TIDAK IKUT FILTER)
-   - RESPONSIVE DIMATIKAN
-   - UKURAN KUNCI
+   GRAFIK (GLOBAL, 1x)
 ======================= */
 function buildChartOnce() {
   const monthly = Array(12).fill(0);
 
   penjualanRaw.forEach(r => {
-    const idx = new Date(r[0]).getUTCMonth(); // 0..11
+    const idx = new Date(r[0]).getUTCMonth();
     monthly[idx] += Number(r[4]) || 0;
   });
 
@@ -221,7 +251,7 @@ function buildChartOnce() {
       }]
     },
     options: {
-      responsive: false,   // ⬅️ FINAL: STOP resize & gerak
+      responsive: false,
       animation: false,
       scales: {
         y: { beginAtZero: true }
@@ -231,17 +261,10 @@ function buildChartOnce() {
 }
 
 /* =======================
-   EVENT (HANYA KPI)
+   EVENT
 ======================= */
 filterProduk.addEventListener("change", updateKPI);
 filterBulan.addEventListener("change", updateKPI);
-
-/*
-RINGKASAN:
-- Grafik = GLOBAL (dibuat 1x, tidak ikut filter)
-- KPI    = TERFILTER (Produk & Bulan)
-- Harga  = MASTER_HARGA (via SKU)
-*/
 </script>
 </body>
 </html>
