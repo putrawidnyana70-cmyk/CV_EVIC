@@ -64,15 +64,12 @@
         <div class="table-container">
             <table>
                 <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>No PO</th>
-                        <th>Outlet</th>
-                        <th>Produk</th>
-                        <th>Qty</th>
-                        <th>SKU</th>
-                    </tr>
-                </thead>
+<tr>
+    <th>Tanggal</th>
+    <th>No PO</th>
+    <th>Outlet</th>
+</tr>
+</thead>
                 <tbody id="penjualanBody">
                    
                 </tbody>
@@ -155,19 +152,69 @@ function renderTable(data) {
   tbody.innerHTML = "";
   const fragment = document.createDocumentFragment();
 
+  // 🔹 GROUPING berdasarkan No PO
+  const grouped = {};
+
   data.forEach(row => {
     const [tanggal, noPO, outlet, produk, qty, sku] = row;
 
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${formatTanggal(tanggal)}</td>
+    if (!grouped[noPO]) {
+      grouped[noPO] = {
+        tanggal,
+        outlet,
+        items: []
+      };
+    }
+
+    grouped[noPO].items.push({ produk, qty, sku });
+  });
+
+  // 🔹 Render master + detail
+  Object.keys(grouped).forEach(noPO => {
+    const group = grouped[noPO];
+
+    // === MASTER ROW ===
+    const trMaster = document.createElement("tr");
+    trMaster.classList.add("po-master");
+    trMaster.innerHTML = `
+      <td>${formatTanggal(group.tanggal)}</td>
       <td>${noPO}</td>
-      <td>${outlet}</td>
-      <td>${produk}</td>
-      <td>${qty}</td>
-      <td>${sku}</td>
+      <td>${group.outlet}</td>
     `;
-    fragment.appendChild(tr);
+
+    // === DETAIL ROW ===
+    const trDetail = document.createElement("tr");
+    trDetail.classList.add("po-detail");
+    trDetail.innerHTML = `
+      <td colspan="3">
+        <table class="detail-table">
+          <thead>
+            <tr>
+              <th>Produk</th>
+              <th>Qty</th>
+              <th>SKU</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${group.items.map(item => `
+              <tr>
+                <td>${item.produk}</td>
+                <td>${item.qty}</td>
+                <td>${item.sku}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </td>
+    `;
+
+    // toggle saat klik
+    trMaster.addEventListener("click", () => {
+      trDetail.classList.toggle("show");
+    });
+
+    fragment.appendChild(trMaster);
+    fragment.appendChild(trDetail);
   });
 
   tbody.appendChild(fragment);
