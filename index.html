@@ -73,10 +73,30 @@
   <h3>Total Penjualan (Rp)</h3>
   <span id="totalPenjualanRp">0</span>
 </div>
+<div class="card">
+  <h3>Outlet Transaksi</h3>
+  <span id="kpiOutletAktif">0</span>
+</div>
+
+<div class="card">
+  <h3>Outlet Tidak Transaksi</h3>
+  <span id="kpiOutletNonAktif">0</span>
+</div>
 </section>
 <section class="chart-box">
   <h3>Grafik Penjualan per Bulan</h3>
   <canvas id="penjualanChart" width="1000" height="320"></canvas>
+</section>
+<section class="outlet-status-box">
+  <h3>Status Outlet</h3>
+
+  <select id="filterStatusOutlet">
+    <option value="">Semua</option>
+    <option value="aktif">Sudah Transaksi</option>
+    <option value="nonaktif">Belum Transaksi</option>
+  </select>
+
+  <div id="listOutletStatus"></div>
 </section>
         </main>
     </div>
@@ -100,6 +120,10 @@ const totalProdukEl       = document.getElementById("totalProduk");
 const totalStokEl         = document.getElementById("totalStok");
 const totalPenjualanEl    = document.getElementById("totalPenjualan");
 const totalPenjualanRpEl  = document.getElementById("totalPenjualanRp");
+const kpiOutletAktifEl    = document.getElementById("kpiOutletAktif");
+const kpiOutletNonAktifEl = document.getElementById("kpiOutletNonAktif");
+const filterStatusOutlet  = document.getElementById("filterStatusOutlet");
+const listOutletStatus    = document.getElementById("listOutletStatus");
 
 /* =======================
    STATE
@@ -184,26 +208,30 @@ function updateKPI() {
   setTimeout(() => {
     const produkDipilih = filterProduk.value;
     const bulanDipilih  = filterBulan.value;
+    const allOutlet = new Set();
+    const outletTransaksi = new Set();
 
     let totalQty = 0;
     let totalRp  = 0;
     const produkSet = new Set();
 
     penjualanRaw.forEach(r => {
+      allOutlet.add(r[2]); // semua outlet
       const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
 
       const produk = r[3];
       const qty    = Number(r[4]) || 0;
       const sku    = r[5];
       const harga  = hargaMap[sku] || 0;
-
+      
       const okProduk = !produkDipilih || produk === produkDipilih;
       const okBulan  = !bulanDipilih  || bulanUTC == bulanDipilih;
-
+      
       if (okProduk && okBulan) {
         totalQty += qty;
         totalRp  += qty * harga;
         produkSet.add(produk);
+        outletTransaksi.add(r[2]);
       }
     });
 
@@ -220,7 +248,17 @@ function updateKPI() {
     totalStokEl.textContent        = totalStok;
     totalPenjualanEl.textContent   = totalQty;
     totalPenjualanRpEl.textContent = "Rp " + totalRp.toLocaleString("id-ID");
+    // =================
+// HITUNG STATUS OUTLET
+// =================
+const totalAktif = outletTransaksi.size;
+const totalNonAktif = allOutlet.size - totalAktif;
 
+kpiOutletAktifEl.textContent = totalAktif;
+kpiOutletNonAktifEl.textContent = totalNonAktif;
+
+// Render list outlet
+renderOutletStatus(allOutlet, outletTransaksi);
     hideLoading();
   }, 200);
 }
@@ -260,12 +298,42 @@ function buildChartOnce() {
     }
   });
 }
+// =======================
+// FUNCTION RENDER OUTLET
+// =======================
+function renderOutletStatus(allOutlet, outletTransaksi) {
+
+  listOutletStatus.innerHTML = "";
+  const statusFilter = filterStatusOutlet.value;
+
+  [...allOutlet].sort().forEach(outlet => {
+
+    const isAktif = outletTransaksi.has(outlet);
+
+    if (statusFilter === "aktif" && !isAktif) return;
+    if (statusFilter === "nonaktif" && isAktif) return;
+
+    const div = document.createElement("div");
+    div.className = "outlet-row";
+
+    div.innerHTML = `
+      <span>${outlet}</span>
+      <span class="${isAktif ? 'badge-hijau' : 'badge-merah'}">
+        ${isAktif ? 'Sudah Transaksi' : 'Belum Transaksi'}
+      </span>
+    `;
+
+    listOutletStatus.appendChild(div);
+  });
+}
 
 /* =======================
    EVENT
 ======================= */
 filterProduk.addEventListener("change", updateKPI);
 filterBulan.addEventListener("change", updateKPI);
+filterStatusOutlet.addEventListener("change", updateKPI);
+
 </script>
 </body>
 </html>
