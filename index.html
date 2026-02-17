@@ -339,6 +339,16 @@ function updateKPI() {
     kpiOutletAktifEl.textContent     = outletTransaksi.size;
     kpiOutletNonAktifEl.textContent  =
         allOutlet.size - outletTransaksi.size;
+    // =============================
+// HIDE TOTAL PRODUK JIKA FILTER PRODUK DIPILIH
+// =============================
+const produkCard = totalProdukEl.closest(".card");
+
+if (produkDipilih) {
+  produkCard.style.display = "none";
+} else {
+  produkCard.style.display = "block";
+}    
 
     // =============================
     // RENDER GRAFIK TAMBAHAN
@@ -347,7 +357,7 @@ function updateKPI() {
     renderOutletChart(outletMap);
 
     renderOutletStatus(allOutlet, outletTransaksi);
-
+    buildChartOnce();
     hideLoading();
 
   }, 150);
@@ -361,10 +371,22 @@ function updateKPI() {
 function buildChartOnce() {
 
   const monthly = Array(12).fill(0);
+  const bulanDipilih  = filterBulan.value;
+  const produkDipilih = filterProduk.value;
 
   penjualanRaw.forEach(r => {
-    const idx = new Date(r[0]).getUTCMonth();
-    monthly[idx] += Number(r[4]) || 0;
+
+    const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
+    const produk   = r[3];
+    const qty      = Number(r[4]) || 0;
+
+    const okProduk = !produkDipilih || produk === produkDipilih;
+    const okBulan  = !bulanDipilih  || bulanUTC == bulanDipilih;
+
+    if (okProduk && okBulan) {
+      monthly[bulanUTC - 1] += qty;
+    }
+
   });
 
   const ctx = document.getElementById("penjualanChart");
@@ -377,7 +399,7 @@ function buildChartOnce() {
     data: {
       labels: ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"],
       datasets: [{
-        label: "Total Penjualan (Global)",
+        label: "Total Penjualan",
         data: monthly,
         borderWidth: 2,
         tension: 0.3,
@@ -387,7 +409,6 @@ function buildChartOnce() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
       scales: {
         y: { beginAtZero: true }
       }
