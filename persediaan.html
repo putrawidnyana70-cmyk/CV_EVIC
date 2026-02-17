@@ -60,15 +60,17 @@
         <div class="table-container">
             <table>
                 <thead>
-                    <tr>
-                        <th>SKU</th>
-                        <th>Produk</th>
-                        <th>Saldo Awal</th>
-                        <th>Stok Masuk</th>
-                        <th>Stok Keluar</th>
-                        <th>Stok Akhir</th>
-                    </tr>
-                </thead>
+<tr>
+  <th>SKU</th>
+  <th>Produk</th>
+  <th>Saldo Awal</th>
+  <th>Stok Masuk</th>
+  <th>Stok Keluar</th>
+  <th>Stok Akhir</th>
+  <th>Forecast</th>
+  <th>Restock</th>
+</tr>
+</thead>
                 <tbody id="stokBody">
                    
                 </tbody>
@@ -153,6 +155,36 @@ fetch(API_URL)
     console.error("API error:", err);
     hideLoading();
   });
+/* ================= FORECASTING ================= */
+  function hitungForecastPerProduk(sku, bulanAktif) {
+
+  let total3Bulan = 0;
+  let jumlahBulanTerpakai = 0;
+
+  for (let b = bulanAktif - 3; b < bulanAktif; b++) {
+    if (b <= 0) continue;
+
+    let totalBulan = 0;
+
+    penjualan.forEach(p => {
+      const d = parseSheetDate(p[0]);
+      if (!d || d.tahun !== TAHUN_AKTIF) return;
+      if (String(p[5]).trim() !== sku) return;
+      if (d.bulan === b) {
+        totalBulan += Number(p[4]) || 0;
+      }
+    });
+
+    if (totalBulan > 0) {
+      total3Bulan += totalBulan;
+      jumlahBulanTerpakai++;
+    }
+  }
+
+  if (jumlahBulanTerpakai === 0) return 0;
+
+  return Math.round(total3Bulan / jumlahBulanTerpakai);
+}
 
 /* =====================================================
    RENDER – ROLLING STOK BULANAN
@@ -199,18 +231,24 @@ function render() {
       }
 
       stok += beliBulan - jualBulan;
+      const forecast = hitungForecastPerProduk(sku, bulanDipilih);
+const restock = Math.max(forecast - stok, 0);
     }
 
     tbody.innerHTML += `
-      <tr>
-        <td>${sku}</td>
-        <td>${nama}</td>
-        <td>${saldoAwal}</td>
-        <td>${masuk}</td>
-        <td>${keluar}</td>
-        <td><b>${stok}</b></td>
-      </tr>
-    `;
+<tr>
+  <td>${sku}</td>
+  <td>${nama}</td>
+  <td>${saldoAwal}</td>
+  <td>${masuk}</td>
+  <td>${keluar}</td>
+  <td><b>${stok}</b></td>
+  <td>${forecast}</td>
+  <td style="color:${restock>0?'red':'green'}">
+    ${restock}
+  </td>
+</tr>
+`;
   });
 
   applySearch();
