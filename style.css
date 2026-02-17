@@ -272,3 +272,31 @@ tbody tr:hover {
 .chart-row .chart-box {
   flex: 1;
 }
+/* BASE */
+.status-box {
+  flex: 1;
+  padding: 15px;
+  border-radius: 10px;
+  background: #f9f9f9;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* PRODUK STYLE */
+.produk-box {
+  background: #eef4ff;
+  border-left: 5px solid #4c6ef5;
+}
+
+.produk-box h3 {
+  color: #364fc7;
+}
+
+/* OUTLET STYLE */
+.outlet-box {
+  background: #f1fdf4;
+  border-left: 5px solid #2f9e44;
+}
+
+.outlet-box h3 {
+  color: #2b8a3e;
+}
