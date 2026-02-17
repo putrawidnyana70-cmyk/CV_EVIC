@@ -56,23 +56,45 @@
             </header>
 
             <section class="cards">
-              
-    <div class="card">
-        <h3>Total Produk</h3>
-        <span id="totalProduk">0</span>
-    </div>
-    <div class="card">
-        <h3>Total Stok</h3>
-        <span id="totalStok">0</span>
-    </div>
-    <div class="card">
-    <h3>Total Penjualan</h3>
+
+<div class="card">
+    <h3>Total Produk Terjual</h3>
+    <span id="totalProdukTerjual">0</span>
+    <small>Jumlah produk unik yang memiliki transaksi</small>
+</div>
+
+<div class="card">
+    <h3>Total Produk Aktif</h3>
+    <span id="totalProduk">0</span>
+    <small>Total seluruh produk yang tersedia</small>
+</div>
+
+<div class="card">
+    <h3>Produk Belum Terjual</h3>
+    <span id="produkBelumTerjual">0</span>
+    <small>Produk yang belum ada transaksi</small>
+</div>
+
+<div class="card">
+    <h3>Total Stok</h3>
+    <span id="totalStok">0</span>
+</div>
+
+<div class="card">
+    <h3>Total Penjualan (Qty)</h3>
     <span id="totalPenjualan">0</span>
 </div>
+
 <div class="card">
   <h3>Total Penjualan (Rp)</h3>
   <span id="totalPenjualanRp">0</span>
 </div>
+
+<div class="card">
+  <h3>Total Outlet Keseluruhan</h3>
+  <span id="totalOutletAll">0</span>
+</div>
+
 <div class="card">
   <h3>Outlet Transaksi</h3>
   <span id="kpiOutletAktif">0</span>
@@ -82,11 +104,27 @@
   <h3>Outlet Tidak Transaksi</h3>
   <span id="kpiOutletNonAktif">0</span>
 </div>
+
+</section>
+
+<section class="chart-row">
+
+<div class="chart-box">
+  <h3>Kontribusi Produk (Tinggi → Rendah)</h3>
+  <canvas id="produkChart" height="320"></canvas>
+</div>
+
+<div class="chart-box">
+  <h3>Grafik Penjualan per Bulan</h3>
+  <canvas id="penjualanChart" height="320"></canvas>
+</div>
+
 </section>
 <section class="chart-box">
-  <h3>Grafik Penjualan per Bulan</h3>
-  <canvas id="penjualanChart" width="1000" height="320"></canvas>
+  <h3>Kontribusi Outlet (Terbanyak & Terendah)</h3>
+  <canvas id="outletChart" height="320"></canvas>
 </section>
+
 <section class="outlet-status-box">
   <h3>Status Outlet</h3>
 
@@ -124,6 +162,11 @@ const kpiOutletAktifEl    = document.getElementById("kpiOutletAktif");
 const kpiOutletNonAktifEl = document.getElementById("kpiOutletNonAktif");
 const filterStatusOutlet  = document.getElementById("filterStatusOutlet");
 const listOutletStatus    = document.getElementById("listOutletStatus");
+const totalProdukTerjualEl = document.getElementById("totalProdukTerjual");
+const produkBelumTerjualEl = document.getElementById("produkBelumTerjual");
+const totalOutletAllEl     = document.getElementById("totalOutletAll");
+
+
 
 /* =======================
    STATE
@@ -133,6 +176,8 @@ let persediaan     = [];
 let hargaMap       = {};
 let chart          = null;
 let masterOutlet = [];
+let produkChart = null;
+let outletChart = null;
 
 /* =======================
    LOADING CONTROL
@@ -205,30 +250,51 @@ function isiDropdownProduk() {
    KPI (TERFILTER)
 ======================= */
 function updateKPI() {
+
   showLoading();
 
   setTimeout(() => {
+
     const produkDipilih = filterProduk.value;
     const bulanDipilih  = filterBulan.value;
 
     const allOutlet = new Set();
     const outletTransaksi = new Set();
 
+    const semuaProdukSet   = new Set();
+    const produkTerjualSet = new Set();
+
+    const produkMap = {};
+    const outletMap = {};
+
     let totalQty = 0;
     let totalRp  = 0;
-    const produkSet = new Set();
+    let totalStok = 0;
 
-    // ============================
-    // 1️⃣ AMBIL SEMUA OUTLET DARI MASTER_OUTLET
-    // ============================
+    // =============================
+    // MASTER OUTLET
+    // =============================
     masterOutlet.forEach(r => {
-      const namaOutlet = r[1]; // kolom Nama Outlet
-      if (namaOutlet) allOutlet.add(namaOutlet);
+      if (r[1]) allOutlet.add(r[1]);
     });
 
-    // ============================
-    // 2️⃣ HITUNG TRANSAKSI TERFILTER
-    // ============================
+    // =============================
+    // MASTER PRODUK (DARI PERSEDIAAN)
+    // =============================
+    persediaan.forEach(r => {
+      const produk = r[1];
+      const stok   = Number(r[5]) || 0;
+
+      if (produk) semuaProdukSet.add(produk);
+
+      if (!produkDipilih || produk === produkDipilih) {
+        totalStok += stok;
+      }
+    });
+
+    // =============================
+    // PENJUALAN TERFILTER
+    // =============================
     penjualanRaw.forEach(r => {
 
       const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
@@ -243,53 +309,57 @@ function updateKPI() {
       const okBulan  = !bulanDipilih  || bulanUTC == bulanDipilih;
 
       if (okProduk && okBulan) {
+
         totalQty += qty;
         totalRp  += qty * harga;
-        produkSet.add(produk);
+
+        produkTerjualSet.add(produk);
         outletTransaksi.add(outlet);
+
+        produkMap[produk] = (produkMap[produk] || 0) + qty;
+        outletMap[outlet] = (outletMap[outlet] || 0) + qty;
       }
     });
 
-    // ============================
-    // 3️⃣ HITUNG STOK
-    // ============================
-    let totalStok = 0;
-    persediaan.forEach(r => {
-      const produk = r[1];
-      const stok   = Number(r[5]) || 0;
-      if (!produkDipilih || produk === produkDipilih) {
-        totalStok += stok;
-      }
-    });
+    // =============================
+    // UPDATE KPI
+    // =============================
 
-    // ============================
-    // 4️⃣ UPDATE KPI UTAMA
-    // ============================
-    totalProdukEl.textContent      = produkSet.size || 0;
-    totalStokEl.textContent        = totalStok;
-    totalPenjualanEl.textContent   = totalQty;
-    totalPenjualanRpEl.textContent = "Rp " + totalRp.toLocaleString("id-ID");
+    totalProdukTerjualEl.textContent = produkTerjualSet.size;
+    totalProdukEl.textContent        = semuaProdukSet.size;
+    produkBelumTerjualEl.textContent = 
+        semuaProdukSet.size - produkTerjualSet.size;
 
-    // ============================
-    // 5️⃣ HITUNG STATUS OUTLET
-    // ============================
-    const totalAktif = outletTransaksi.size;
-    const totalNonAktif = allOutlet.size - totalAktif;
+    totalStokEl.textContent          = totalStok;
+    totalPenjualanEl.textContent     = totalQty;
+    totalPenjualanRpEl.textContent   =
+        "Rp " + totalRp.toLocaleString("id-ID");
 
-    kpiOutletAktifEl.textContent    = totalAktif;
-    kpiOutletNonAktifEl.textContent = totalNonAktif;
+    totalOutletAllEl.textContent     = allOutlet.size;
+    kpiOutletAktifEl.textContent     = outletTransaksi.size;
+    kpiOutletNonAktifEl.textContent  =
+        allOutlet.size - outletTransaksi.size;
+
+    // =============================
+    // RENDER GRAFIK TAMBAHAN
+    // =============================
+    renderProdukChart(produkMap);
+    renderOutletChart(outletMap);
 
     renderOutletStatus(allOutlet, outletTransaksi);
 
     hideLoading();
-  }, 200);
+
+  }, 150);
 }
+
 
 
 /* =======================
    GRAFIK (GLOBAL, 1x)
 ======================= */
 function buildChartOnce() {
+
   const monthly = Array(12).fill(0);
 
   penjualanRaw.forEach(r => {
@@ -299,6 +369,8 @@ function buildChartOnce() {
 
   const ctx = document.getElementById("penjualanChart");
   if (!ctx) return;
+
+  if (chart) chart.destroy();
 
   chart = new Chart(ctx, {
     type: "line",
@@ -313,13 +385,111 @@ function buildChartOnce() {
       }]
     },
     options: {
-      responsive: false,
+      responsive: true,
+      maintainAspectRatio: false,
       animation: false,
       scales: {
         y: { beginAtZero: true }
       }
     }
   });
+}
+// =======================
+// TAMBAHAN GRAFIK PRODUK
+// =======================
+function renderProdukChart(dataMap){
+
+  if (!dataMap || Object.keys(dataMap).length === 0) {
+    if (produkChart) produkChart.destroy();
+    return;
+  }
+
+  const sorted = Object.entries(dataMap)
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,10); // TOP 10 saja biar rapi
+
+  const labels = sorted.map(x=>x[0]);
+  const data   = sorted.map(x=>x[1]);
+
+  if (produkChart) produkChart.destroy();
+
+  produkChart = new Chart(
+    document.getElementById("produkChart"),
+    {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Total Terjual",
+          data: data
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: { beginAtZero: true }
+        }
+      }
+    }
+  );
+}
+// =======================
+// TAMBAHAN GRAFIK OUTLET
+// =======================
+function renderOutletChart(dataMap){
+
+  if (!dataMap || Object.keys(dataMap).length === 0) {
+    if (outletChart) outletChart.destroy();
+    return;
+  }
+
+  const sorted = Object.entries(dataMap)
+    .sort((a,b)=>b[1]-a[1]);
+
+  let combined = [];
+
+  if (sorted.length <= 10) {
+    combined = sorted;
+  } else {
+    const top5 = sorted.slice(0,5);
+    const bottom5 = sorted.slice(-5);
+    combined = [...top5, ...bottom5];
+  }
+
+  const labels = combined.map(x=>x[0]);
+  const data   = combined.map(x=>x[1]);
+
+  if (outletChart) outletChart.destroy();
+
+  outletChart = new Chart(
+    document.getElementById("outletChart"),
+    {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Total Pembelian",
+          data: data
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: { beginAtZero: true }
+        }
+      }
+    }
+  );
 }
 // =======================
 // FUNCTION RENDER OUTLET
