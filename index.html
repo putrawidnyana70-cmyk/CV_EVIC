@@ -297,29 +297,36 @@ function updateKPI() {
     // =============================
     penjualanRaw.forEach(r => {
 
-      const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
+  const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
 
-      const outlet = r[2];
-      const produk = r[3];
-      const qty    = Number(r[4]) || 0;
-      const sku    = r[5];
-      const harga  = hargaMap[sku] || 0;
+  const outlet = r[2];
+  const produk = r[3];
+  const qty    = Number(r[4]) || 0;
+  const sku    = r[5];
+  const harga  = hargaMap[sku] || 0;
 
-      const okProduk = !produkDipilih || produk === produkDipilih;
-      const okBulan  = !bulanDipilih  || bulanUTC == bulanDipilih;
+  const okProduk = !produkDipilih || produk === produkDipilih;
+  const okBulan  = !bulanDipilih  || bulanUTC == bulanDipilih;
 
-      if (okProduk && okBulan) {
+  if (okProduk && okBulan) {
 
-        totalQty += qty;
-        totalRp  += qty * harga;
+    totalQty += qty;
+    totalRp  += qty * harga;
 
-        produkTerjualSet.add(produk);
-        outletTransaksi.add(outlet);
+    produkTerjualSet.add(produk);
+    outletTransaksi.add(outlet);
 
-        produkMap[produk] = (produkMap[produk] || 0) + qty;
-        outletMap[outlet] = (outletMap[outlet] || 0) + qty;
-      }
-    });
+    // 🔥 PRODUK IKUT BULAN
+    produkMap[produk] = (produkMap[produk] || 0) + qty;
+
+  }
+
+  // 🔥 OUTLET IKUT BULAN SAJA
+  if (!bulanDipilih || bulanUTC == bulanDipilih) {
+    outletMap[outlet] = (outletMap[outlet] || 0) + qty;
+  }
+
+});
 
     // =============================
     // UPDATE KPI
@@ -349,6 +356,25 @@ if (produkDipilih) {
 } else {
   produkCard.style.display = "block";
 }    
+// =============================
+// UPDATE JUDUL GRAFIK DINAMIS
+// =============================
+
+const bulanText = filterBulan.options[filterBulan.selectedIndex].text;
+
+document.querySelector("#produkChart")
+  .closest(".chart-box")
+  .querySelector("h3").textContent =
+  bulanDipilih
+    ? "Kontribusi Produk Bulan " + bulanText
+    : "Kontribusi Produk (Global)";
+
+document.querySelector("#outletChart")
+  .closest(".chart-box")
+  .querySelector("h3").textContent =
+  bulanDipilih
+    ? "Kontribusi Outlet Bulan " + bulanText
+    : "Kontribusi Outlet (Global)";
 
     // =============================
     // RENDER GRAFIK TAMBAHAN
@@ -358,6 +384,7 @@ if (produkDipilih) {
 
     renderOutletStatus(allOutlet, outletTransaksi);
     buildChartOnce();
+    
     hideLoading();
 
   }, 150);
@@ -371,22 +398,10 @@ if (produkDipilih) {
 function buildChartOnce() {
 
   const monthly = Array(12).fill(0);
-  const bulanDipilih  = filterBulan.value;
-  const produkDipilih = filterProduk.value;
 
   penjualanRaw.forEach(r => {
-
-    const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
-    const produk   = r[3];
-    const qty      = Number(r[4]) || 0;
-
-    const okProduk = !produkDipilih || produk === produkDipilih;
-    const okBulan  = !bulanDipilih  || bulanUTC == bulanDipilih;
-
-    if (okProduk && okBulan) {
-      monthly[bulanUTC - 1] += qty;
-    }
-
+    const idx = new Date(r[0]).getUTCMonth();
+    monthly[idx] += Number(r[4]) || 0;
   });
 
   const ctx = document.getElementById("penjualanChart");
@@ -399,7 +414,7 @@ function buildChartOnce() {
     data: {
       labels: ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"],
       datasets: [{
-        label: "Total Penjualan",
+        label: "Total Penjualan (Global)",
         data: monthly,
         borderWidth: 2,
         tension: 0.3,
