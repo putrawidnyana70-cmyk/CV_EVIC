@@ -231,9 +231,10 @@ function render() {
       }
 
       stok += beliBulan - jualBulan;
-      const forecast = hitungForecastPerProduk(sku, bulanDipilih);
-const restock = Math.max(forecast - stok, 0);
     }
+
+     const forecast = hitungForecastPerProduk(sku, bulanDipilih);
+const restock = Math.max(forecast - stok, 0);
 
     tbody.innerHTML += `
 <tr>
