@@ -304,6 +304,8 @@ tbody tr:hover {
   display: flex;
   gap: 20px;
   align-items: flex-start;
+  display: flex !important;
+  margin-top: 40px; /* atur sesuai selera */
 }
 
 .status-box {
@@ -311,9 +313,7 @@ tbody tr:hover {
   max-height: 500px;
   overflow-y: auto;
 }
-.status-row {
-  display: flex !important;
-}
+
 
 @media (max-width: 900px) {
   .status-row {
