@@ -13,6 +13,10 @@ header {
 body {
     background: #f4f6f8;
 }
+body {
+  margin: 0;
+  overflow: hidden;
+}
 
 .app {
     display: flex;
@@ -25,6 +29,13 @@ body {
     background: #ffffff;
     padding: 20px;
     border-right: 1px solid #e5e7eb;
+}
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
 }
 
 .sidebar .logo {
@@ -66,12 +77,21 @@ body {
     box-shadow: 0 4px 10px rgba(219,71,3,0.3);
 }
 
+
 /* CONTENT */
 .content {
     flex: 1;
     padding: 30px;
     display: flex;              /* ⬅️ KUNCI ARAH */
     flex-direction: column;     /* ⬅️ WAJIB */
+}
+.content {
+  margin-left: 220px; /* sama dengan lebar sidebar */
+  height: 100vh;
+  overflow-y: auto;
+}
+.content {
+  scroll-behavior: smooth;
 }
 
 header h1 {
@@ -359,6 +379,7 @@ tbody tr:hover {
 .btn-export:hover {
   background-color: #c94d22;
 }
+
 
 
 
