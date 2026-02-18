@@ -252,7 +252,10 @@ function isiDropdown(){
     return Math.ceil(angka / 10) * 10;
   }
 
-  if(angka >= 1000){
+  if(angka < 1000){
+    return Math.ceil(angka / 50) * 50;
+  }
+
   return Math.ceil(angka / 100) * 100;
 }
 
@@ -376,6 +379,7 @@ filterTahun.addEventListener("change",updateForecast);
 </body>
 
 </html>
+
 
 
 
