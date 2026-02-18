@@ -55,6 +55,9 @@
     <option value="12">Desember</option>
   </select>
 </div>
+        <button id="exportOpname" class="btn-export">
+  Export Stok Opname
+</button>
 
         <!-- TABLE -->
         <div class="table-container">
@@ -277,7 +280,42 @@ filterBulan.addEventListener("change", () => {
 });
 
 searchStock.addEventListener("keyup", applySearch);
+    document.getElementById("exportOpname").addEventListener("click", function () {
+
+  let csv = [];
+  
+  // Header
+  csv.push(["SKU", "Produk", "Stok Sistem", "Stok Fisik", "Selisih", "Keterangan"]);
+
+  // Ambil data dari tabel yang sudah dirender
+  document.querySelectorAll("#stokBody tr").forEach(row => {
+    const cols = row.querySelectorAll("td");
+
+    const sku = cols[0].innerText;
+    const produk = cols[1].innerText;
+    const stokAkhir = cols[5].innerText; // kolom stok akhir
+
+    csv.push([sku, produk, stokAkhir, "", "", ""]);
+  });
+
+  // Convert ke CSV string
+  let csvContent = csv.map(e => e.join(",")).join("\n");
+
+  // Buat file download
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "stok_opname.csv";
+  link.click();
+});
+    const bulan = filterBulan.options[filterBulan.selectedIndex].text;
+link.download = `stok_opname_${bulan}.csv`;
+    const today = new Date().toISOString().split("T")[0];
+link.download = `stok_opname_${today}.csv`;
 </script>
 
 </body>
+
 </html>
