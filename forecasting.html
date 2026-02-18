@@ -239,7 +239,22 @@ function isiDropdown(){
   });
 
 }
+/* ================= PEMBULATAN NAIK ================= */
+    function pembulatanNaik(angka){
 
+  if(angka <= 0) return 0;
+
+  if(angka < 10){
+    return 10;
+  }
+
+  if(angka < 100){
+    return Math.ceil(angka / 10) * 10;
+  }
+
+  if(angka >= 1000){
+  return Math.ceil(angka / 100) * 100;
+}
 
 /* ================= FORECAST ================= */
 function hitungForecast(sku, bulan, tahun){
@@ -268,7 +283,8 @@ function hitungForecast(sku, bulan, tahun){
       (last3[2].qty*0.5);
   }
 
-  return Math.round(forecast*1.10); // +10% safety
+  const withSafety = Math.round(forecast * 1.10);
+return pembulatanNaik(withSafety); // +10% safety
 }
 
 
@@ -360,6 +376,7 @@ filterTahun.addEventListener("change",updateForecast);
 </body>
 
 </html>
+
 
 
 
