@@ -174,21 +174,15 @@ function isiDropdown(){
 
   filterProduk.innerHTML = "";
 
-  // Opsi Semua Produk
   const optAll = document.createElement("option");
   optAll.value = "";
   optAll.textContent = "Semua Produk";
   filterProduk.appendChild(optAll);
 
-  const skuSet = new Set();
-
-  penjualanRaw.forEach(r=>{
-    if(r[5]) skuSet.add(String(r[5]).trim());
-  });
-
-  masterHistory.forEach(r=>{
-    if(r[4]) skuSet.add(String(r[4]).trim());
-  });
+  const skuSet = new Set([
+    ...penjualanRaw.map(r=>String(r[5]).trim()),
+    ...masterHistory.map(r=>String(r[4]).trim())
+  ]);
 
   [...skuSet].sort().forEach(sku=>{
     const opt = document.createElement("option");
@@ -248,6 +242,14 @@ function hitungForecast(sku, bulan, tahun){
   }
 
   return Math.round(forecast*1.10); // +10% safety
+}
+
+/* ================= AKURASI ================= */
+function hitungAkurasi(actual, forecast){
+  if(actual === 0) return "-";
+  const error = Math.abs(actual - forecast);
+  const acc = 100 - ((error / actual) * 100);
+  return acc.toFixed(1) + "%";
 }
 
 /* ================= UPDATE ================= */
@@ -313,6 +315,9 @@ function updateForecast(){
   document.getElementById("forecastValue").textContent =
     "Rp "+totalValue.toLocaleString("id-ID");
   document.getElementById("totalForecast").textContent = totalForecast;
+
+  const akurasi = hitungAkurasi(totalActual, totalForecast);
+  document.getElementById("akurasi").textContent = akurasi;
 }
 
 /* ================= EVENT ================= */
@@ -324,6 +329,7 @@ filterTahun.addEventListener("change",updateForecast);
 </body>
 
 </html>
+
 
 
 
