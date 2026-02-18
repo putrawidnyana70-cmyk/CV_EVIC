@@ -4,6 +4,11 @@
     box-sizing: border-box;
     font-family: Arial, sans-serif;
 }
+header {
+  border-bottom: 3px solid #db4703;
+  padding-bottom: 15px;
+  margin-bottom: 20px;
+}
 
 body {
     background: #f4f6f8;
@@ -354,6 +359,7 @@ tbody tr:hover {
 .btn-export:hover {
   background-color: #c94d22;
 }
+
 
 
 
