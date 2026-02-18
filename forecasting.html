@@ -1,34 +1,32 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <link rel="icon" type="image/png" href="logo.png">
-  <title>Forecasting</title>
-  <link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="logo.png">
+    <title>Dashboard Inventory</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
+    <!-- LOADING -->
 <div id="loading">
   <img src="logo.jpg" alt="Loading">
   <p>Memuat data...</p>
 </div>
+    <div class="app">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="logo.jpg" alt="Logo">
+                <h2>Inventory</h2>
+            </div>
 
-<div class="app">
-
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-  <div class="logo">
-    <img src="logo.jpg" alt="Logo">
-    <h2>Inventory</h2>
-  </div>
-
-  <nav>
-    <a href="index.html">Dashboard</a>
-    <a href="penjualan.html">Penjualan</a>
-    <a href="persediaan.html">Persediaan</a>
-    <a href="forecasting.html" class="active">Forecasting</a>
-  </nav>
-</aside>
+            <nav>
+                <a href="index.html" class="active">Dashboard</a>
+                <a href="penjualan.html">Penjualan</a>
+                <a href="persediaan.html">Persediaan</a>
+                <a href="forecasting.html" class="active">Forecasting</a>
+            </nav>
+        </aside>
 
   <!-- CONTENT -->
   <main class="content">
@@ -299,3 +297,4 @@ filterTahun.addEventListener("change",updateForecast);
 </body>
 
 </html>
+
