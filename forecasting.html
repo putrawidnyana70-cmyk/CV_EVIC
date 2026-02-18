@@ -105,7 +105,6 @@ const loading      = document.getElementById("loading");
 
 /* ================= STATE ================= */
 let masterHistory = [];
-let penjualanRaw  = [];
 let hargaMap = {};
 
 /* ================= LOADING ================= */
@@ -126,11 +125,10 @@ fetch(API_URL)
 .then(data=>{
 
   masterHistory = (data.masterHistory || []).slice(1);
-  penjualanRaw  = (data.penjualan || []).slice(1);
 
   const masterHarga = (data.masterHarga || []).slice(1);
   masterHarga.forEach(r=>{
-    const sku = r[0];
+    const sku = String(r[0]).trim();
     const hargaBeli = Number(r[2]) || 0;
     if(sku) hargaMap[sku] = hargaBeli;
   });
@@ -140,17 +138,13 @@ fetch(API_URL)
   hideLoading();
 });
 
-/* ================= DROPDOWN ================= */
+/* ================= DROPDOWN SKU ================= */
 function isiDropdownProduk(){
 
   const setSKU = new Set();
 
   masterHistory.forEach(r=>{
-    if(r[4]) setSKU.add(r[4]);
-  });
-
-  penjualanRaw.forEach(r=>{
-    if(r[5]) setSKU.add(r[5]);
+    if(r[4]) setSKU.add(String(r[4]).trim());
   });
 
   [...setSKU].sort().forEach(sku=>{
@@ -161,7 +155,7 @@ function isiDropdownProduk(){
   });
 }
 
-/* ================= FORECAST FUNCTION (HYBRID) ================= */
+/* ================= FORECAST (3 BULAN TERAKHIR) ================= */
 function hitungForecast(sku, bulan, tahun){
 
   const mapBulan = {
@@ -170,59 +164,53 @@ function hitungForecast(sku, bulan, tahun){
     September:9, Oktober:10, November:11, Desember:12
   };
 
-  let seasonal = 0;
-  let recentHistory = [];
+  sku = String(sku).trim();
 
-  /* ===== MASTER HISTORY ===== */
+  // Ambil histori SKU tersebut
+  let dataSKU = [];
+
   masterHistory.forEach(r=>{
     const th = Number(r[1]);
     const bl = mapBulan[String(r[2]).trim()];
     const qty = Number(r[3]) || 0;
     const skuData = String(r[4]).trim();
 
-    if(skuData !== sku) return;
-
-    if(th === tahun-1 && bl === bulan){
-      seasonal = qty;
-    }
-
-    if(th === tahun && bl < bulan){
-      recentHistory.push(qty);
+    if(skuData === sku){
+      dataSKU.push({
+        tahun: th,
+        bulan: bl,
+        qty: qty
+      });
     }
   });
 
-  const last3History = recentHistory.slice(-3);
-  const avgHistory = last3History.length>0
-      ? last3History.reduce((a,b)=>a+b,0)/last3History.length
-      : 0;
+  // Urutkan kronologis
+  dataSKU.sort((a,b)=>{
+    if(a.tahun !== b.tahun) return a.tahun - b.tahun;
+    return a.bulan - b.bulan;
+  });
 
-  if(seasonal > 0){
-    return Math.round((seasonal*0.6)+(avgHistory*0.4));
+  // Cari posisi bulan target
+  let index = dataSKU.findIndex(d =>
+    d.tahun === tahun && d.bulan === bulan
+  );
+
+  // Jika belum ada (bulan future)
+  if(index === -1){
+    index = dataSKU.findIndex(d =>
+      d.tahun > tahun || (d.tahun === tahun && d.bulan > bulan)
+    );
+    if(index === -1) index = dataSKU.length;
   }
 
-  /* ===== FALLBACK KE RAW PENJUALAN ===== */
-  let recentRaw = [];
+  // Ambil 3 bulan sebelumnya
+  const last3 = dataSKU.slice(Math.max(0,index-3), index);
 
-  penjualanRaw.forEach(r=>{
-    const date = new Date(r[0]);
-    const th = date.getUTCFullYear();
-    const bl = date.getUTCMonth()+1;
-    const skuData = String(r[5]).trim();
-    const qty = Number(r[4]) || 0;
+  if(last3.length === 0) return 0;
 
-    if(skuData !== sku) return;
+  const total = last3.reduce((sum,d)=>sum+d.qty,0);
 
-    if(th === tahun && bl < bulan){
-      recentRaw.push(qty);
-    }
-  });
-
-  const last3Raw = recentRaw.slice(-3);
-  const avgRaw = last3Raw.length>0
-      ? last3Raw.reduce((a,b)=>a+b,0)/last3Raw.length
-      : 0;
-
-  return Math.round(avgRaw);
+  return Math.round(total / last3.length);
 }
 
 /* ================= AKURASI ================= */
@@ -243,29 +231,29 @@ function updateForecast(){
   let actualQty=0;
   let totalForecastSemua=0;
 
-  const allSKU = new Set([
-    ...masterHistory.map(r=>r[4]),
-    ...penjualanRaw.map(r=>r[5])
-  ]);
+  const allSKU = new Set(masterHistory.map(r=>String(r[4]).trim()));
 
   /* ===== PER PRODUK ===== */
   if(sku){
+
     forecastQty = hitungForecast(sku,bulan,tahun);
 
-    // actual dari masterHistory
+    const mapBulan = {
+      Januari:1, Februari:2, Maret:3, April:4,
+      Mei:5, Juni:6, Juli:7, Agustus:8,
+      September:9, Oktober:10, November:11, Desember:12
+    };
+
     masterHistory.forEach(r=>{
       const th = Number(r[1]);
-      const blMap = {
-        Januari:1, Februari:2, Maret:3, April:4,
-        Mei:5, Juni:6, Juli:7, Agustus:8,
-        September:9, Oktober:10, November:11, Desember:12
-      };
-      const bl = blMap[String(r[2]).trim()];
+      const bl = mapBulan[String(r[2]).trim()];
+      const skuData = String(r[4]).trim();
 
-      if(r[4]===sku && th===tahun && bl===bulan){
+      if(skuData === sku && th===tahun && bl===bulan){
         actualQty += Number(r[3]) || 0;
       }
     });
+
   }
 
   /* ===== TOTAL SEMUA PRODUK ===== */
@@ -277,7 +265,7 @@ function updateForecast(){
     forecastQty = totalForecastSemua;
   }
 
-  const forecastValue = forecastQty*(hargaMap[sku]||0);
+  const forecastValue = forecastQty * (hargaMap[sku] || 0);
   const akurasi = hitungAkurasi(actualQty,forecastQty);
 
   document.getElementById("forecastQty").textContent = forecastQty;
@@ -297,4 +285,5 @@ filterTahun.addEventListener("change",updateForecast);
 </body>
 
 </html>
+
 
