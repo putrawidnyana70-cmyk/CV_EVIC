@@ -319,4 +319,24 @@ tbody tr:hover {
   .status-row {
     flex-direction: column;
   }
+
+}
+.export-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.btn-export {
+  padding: 8px 16px;
+  background-color: #e45a2b;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: auto;
+}
+
+.btn-export:hover {
+  background-color: #c94d22;
 }
