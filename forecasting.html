@@ -109,7 +109,7 @@
 <script>
 
 /* ================= CONFIG ================= */
-const API_URL = "https://script.google.com/macros/s/AKfycbyjpAukfJYA-lEXqV6F2HfOFlOLSOw-BUCiS_boUxfZISsv-DBsun0xiIkqeChRWluJ/exec";
+const API_URL = "YOUR_API_URL_HERE";
 
 /* ================= ELEMENT ================= */
 const filterProduk = document.getElementById("filterProduk");
@@ -118,32 +118,32 @@ const filterTahun  = document.getElementById("filterTahun");
 const loading      = document.getElementById("loading");
 
 /* ================= STATE ================= */
+let penjualanRaw = [];
 let masterHistory = [];
-let masterProduk  = [];
+let masterProduk = [];
 let hargaMap = {};
-let produkMap = {}; // SKU → Nama Produk
+let produkMap = {}; // SKU -> Nama Produk
 
 /* ================= LOADING ================= */
 function showLoading(){
   loading.style.display="flex";
-  loading.style.opacity="1";
 }
 function hideLoading(){
-  loading.style.opacity="0";
-  setTimeout(()=>loading.style.display="none",300);
+  loading.style.display="none";
 }
 
-/* ================= FETCH DATA ================= */
+/* ================= FETCH ================= */
 showLoading();
 
 fetch(API_URL)
 .then(res=>res.json())
 .then(data=>{
 
+  penjualanRaw  = (data.penjualan || []).slice(1);
   masterHistory = (data.masterHistory || []).slice(1);
   masterProduk  = (data.masterProduk || []).slice(1);
 
-  // Mapping SKU → Nama Produk
+  // Mapping Produk
   masterProduk.forEach(r=>{
     const sku = String(r[0]).trim();
     const nama = r[1];
@@ -151,34 +151,48 @@ fetch(API_URL)
   });
 
   // Mapping Harga Beli
-  const masterHarga = (data.masterHarga || []).slice(1);
-  masterHarga.forEach(r=>{
+  (data.masterHarga || []).slice(1).forEach(r=>{
     const sku = String(r[0]).trim();
-    const hargaBeli = Number(r[2]) || 0;
-    if(sku) hargaMap[sku] = hargaBeli;
+    const harga = Number(r[2]) || 0;
+    hargaMap[sku] = harga;
   });
 
-  isiDropdownProduk();
+  isiDropdown();
   updateForecast();
   hideLoading();
+
 });
 
-/* ================= DROPDOWN NAMA PRODUK ================= */
-function isiDropdownProduk(){
+/* ================= DROPDOWN ================= */
+function isiDropdown(){
 
   filterProduk.innerHTML = "";
 
-  const setSKU = new Set(masterProduk.map(r=>String(r[0]).trim()));
+  const optAll = document.createElement("option");
+  optAll.value = "";
+  optAll.textContent = "Semua Produk";
+  filterProduk.appendChild(optAll);
 
-  [...setSKU].sort().forEach(sku=>{
+  const skuSet = new Set();
+
+  penjualanRaw.forEach(r=>{
+    if(r[5]) skuSet.add(String(r[5]).trim());
+  });
+
+  masterHistory.forEach(r=>{
+    if(r[4]) skuSet.add(String(r[4]).trim());
+  });
+
+  [...skuSet].sort().forEach(sku=>{
     const opt = document.createElement("option");
     opt.value = sku;
     opt.textContent = produkMap[sku] || sku;
     filterProduk.appendChild(opt);
   });
+
 }
 
-/* ================= WEIGHTED MOVING AVERAGE ================= */
+/* ================= FORECAST ================= */
 function hitungForecast(sku, bulan, tahun){
 
   const mapBulan = {
@@ -201,102 +215,93 @@ function hitungForecast(sku, bulan, tahun){
   });
 
   dataSKU.sort((a,b)=>{
-    if(a.tahun !== b.tahun) return a.tahun - b.tahun;
-    return a.bulan - b.bulan;
+    if(a.tahun!==b.tahun) return a.tahun-b.tahun;
+    return a.bulan-b.bulan;
   });
 
-  let index = dataSKU.findIndex(d =>
-    d.tahun === tahun && d.bulan === bulan
-  );
+  const index = dataSKU.findIndex(d=>d.tahun===tahun && d.bulan===bulan);
+  const i = index===-1 ? dataSKU.length : index;
 
-  if(index === -1){
-    index = dataSKU.length;
-  }
+  const last3 = dataSKU.slice(Math.max(0,i-3), i);
 
-  const last3 = dataSKU.slice(Math.max(0,index-3), index);
+  if(last3.length===0) return 0;
 
-  if(last3.length === 0) return 0;
+  let forecast=0;
 
-  // Weighted: 0.2 / 0.3 / 0.5
-  let forecast = 0;
-
-  if(last3.length === 1){
-    forecast = last3[0].qty;
-  } else if(last3.length === 2){
-    forecast = (last3[0].qty*0.4)+(last3[1].qty*0.6);
+  if(last3.length===1){
+    forecast=last3[0].qty;
+  } else if(last3.length===2){
+    forecast=(last3[0].qty*0.4)+(last3[1].qty*0.6);
   } else {
-    forecast =
+    forecast=
       (last3[0].qty*0.2)+
       (last3[1].qty*0.3)+
       (last3[2].qty*0.5);
   }
 
-  // Tambah 10% Safety Stock
-  return Math.round(forecast * 1.10);
+  return Math.round(forecast*1.10); // +10% safety
 }
 
-/* ================= AKURASI ================= */
-function hitungAkurasi(actual,forecast){
-  if(actual===0) return "-";
-  const error=Math.abs(actual-forecast);
-  return (100-((error/actual)*100)).toFixed(1)+"%";
-}
-
-/* ================= UPDATE KPI ================= */
+/* ================= UPDATE ================= */
 function updateForecast(){
 
   const sku = filterProduk.value;
   const bulan = Number(filterBulan.value);
   const tahun = Number(filterTahun.value);
 
-  let forecastQty=0;
-  let actualQty=0;
-  let totalForecastSemua=0;
+  let totalForecast=0;
+  let totalActual=0;
 
-  const allSKU = Object.keys(produkMap);
+  const allSKU = new Set([
+    ...penjualanRaw.map(r=>String(r[5]).trim()),
+    ...masterHistory.map(r=>String(r[4]).trim())
+  ]);
 
-  /* ===== PER PRODUK ===== */
-  if(sku){
+  const tbody = document.getElementById("forecastBody");
+  tbody.innerHTML="";
 
-    forecastQty = hitungForecast(sku,bulan,tahun);
+  allSKU.forEach(s=>{
 
-    const mapBulan = {
-      Januari:1, Februari:2, Maret:3, April:4,
-      Mei:5, Juni:6, Juli:7, Agustus:8,
-      September:9, Oktober:10, November:11, Desember:12
-    };
+    if(sku && s!==sku) return;
 
-    masterHistory.forEach(r=>{
-      const th = Number(r[1]);
-      const bl = mapBulan[String(r[2]).trim()];
-      const skuData = String(r[4]).trim();
+    const forecastQty = hitungForecast(s,bulan,tahun);
 
-      if(skuData === sku && th===tahun && bl===bulan){
-        actualQty += Number(r[3]) || 0;
+    // ACTUAL DARI PENJUALAN
+    let actualQty=0;
+    penjualanRaw.forEach(r=>{
+      const date = new Date(r[0]);
+      const th = date.getFullYear();
+      const bl = date.getMonth()+1;
+      const skuData = String(r[5]).trim();
+
+      if(skuData===s && th===tahun && bl===bulan){
+        actualQty+=Number(r[4])||0;
       }
     });
 
-  }
+    const harga = hargaMap[s]||0;
+    const value = forecastQty*harga;
 
-  /* ===== TOTAL SEMUA PRODUK ===== */
-  allSKU.forEach(s=>{
-    totalForecastSemua += hitungForecast(s,bulan,tahun);
+    totalForecast+=forecastQty;
+    totalActual+=actualQty;
+
+    const tr=document.createElement("tr");
+    tr.innerHTML=`
+      <td>${produkMap[s]||s}</td>
+      <td>${forecastQty}</td>
+      <td>${actualQty}</td>
+      <td>Rp ${harga.toLocaleString("id-ID")}</td>
+      <td>Rp ${value.toLocaleString("id-ID")}</td>
+    `;
+    tbody.appendChild(tr);
+
   });
 
-  if(!sku){
-    forecastQty = totalForecastSemua;
-  }
-
-  const hargaBeli = hargaMap[sku] || 0;
-  const forecastValue = forecastQty * hargaBeli;
-  const akurasi = hitungAkurasi(actualQty,forecastQty);
-
-  document.getElementById("forecastQty").textContent = forecastQty;
+  document.getElementById("forecastQty").textContent = totalForecast;
+  document.getElementById("actualQty").textContent = totalActual;
   document.getElementById("forecastValue").textContent =
-    "Rp "+forecastValue.toLocaleString("id-ID");
-  document.getElementById("actualQty").textContent = actualQty;
-  document.getElementById("akurasi").textContent = akurasi;
-  document.getElementById("totalForecast").textContent = totalForecastSemua;
+    "Rp "+(totalForecast*(hargaMap[sku]||0)).toLocaleString("id-ID");
+
 }
 
 /* ================= EVENT ================= */
@@ -308,6 +313,7 @@ filterTahun.addEventListener("change",updateForecast);
 </body>
 
 </html>
+
 
 
 
