@@ -92,13 +92,15 @@
   <h3 style="margin-bottom:15px;">Forecast Detail</h3>
   <table>
     <thead>
-      <tr>
-        <th>Produk</th>
-        <th>Forecast Qty</th>
-        <th>Harga Beli</th>
-        <th>Forecast Value</th>
-      </tr>
-    </thead>
+  <tr>
+    <th>Produk</th>
+    <th>Forecast Qty</th>
+    <th>Actual Qty</th>
+    <th>Selisih</th>
+    <th>Harga Beli</th>
+    <th>Forecast Value</th>
+  </tr>
+</thead>
     <tbody id="forecastTableBody"></tbody>
   </table>
 </section>
@@ -317,13 +319,22 @@ function updateForecast(){
     totalValue+=value;
 
     if(tbody){
-      const tr=document.createElement("tr");
-      tr.innerHTML=`
-        <td>${produkMap[sku]||sku}</td>
-        <td>${forecastQty}</td>
-        <td>Rp ${harga.toLocaleString("id-ID")}</td>
-        <td>Rp ${value.toLocaleString("id-ID")}</td>
-      `;
+      const selisih = forecastQty - actualQty;
+
+const warnaSelisih =
+  selisih > 0 ? "style='color:orange;font-weight:bold'" :
+  selisih < 0 ? "style='color:red;font-weight:bold'" :
+  "style='color:green;font-weight:bold'";
+
+const tr=document.createElement("tr");
+tr.innerHTML=`
+  <td>${produkMap[sku]||sku}</td>
+  <td>${forecastQty}</td>
+  <td>${actualQty}</td>
+  <td ${warnaSelisih}>${selisih}</td>
+  <td>Rp ${harga.toLocaleString("id-ID")}</td>
+  <td>Rp ${value.toLocaleString("id-ID")}</td>
+`;
       tbody.appendChild(tr);
     }
 
@@ -349,6 +360,7 @@ filterTahun.addEventListener("change",updateForecast);
 </body>
 
 </html>
+
 
 
 
