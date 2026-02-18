@@ -122,22 +122,19 @@ let penjualanRaw = [];
 let masterHistory = [];
 let masterProduk = [];
 let hargaMap = {};
-let produkMap = {}; // SKU -> Nama Produk
+let produkMap = {};
+let historiGabungan = {}; // SKU -> array histori bulanan
 
 /* ================= LOADING ================= */
-function showLoading(){
-  if(loading) loading.style.display="flex";
-}
-function hideLoading(){
-  if(loading) loading.style.display="none";
-}
+function showLoading(){ if(loading) loading.style.display="flex"; }
+function hideLoading(){ if(loading) loading.style.display="none"; }
 
-/* ================= FETCH DATA ================= */
+/* ================= FETCH ================= */
 showLoading();
 
 fetch(API_URL)
-.then(res => res.json())
-.then(data => {
+.then(res=>res.json())
+.then(data=>{
 
   penjualanRaw  = (data.penjualan || []).slice(1);
   masterHistory = (data.masterHistory || []).slice(1);
@@ -150,50 +147,28 @@ fetch(API_URL)
     if(sku) produkMap[sku] = nama;
   });
 
-  // Mapping Harga Beli
+  // Mapping Harga
   (data.masterHarga || []).slice(1).forEach(r=>{
     const sku = String(r[0]).trim();
-    const harga = Number(r[2]) || 0;
-    hargaMap[sku] = harga;
+    hargaMap[sku] = Number(r[2]) || 0;
   });
 
+  bangunHistoriGabungan();
   isiDropdown();
   updateForecast();
   hideLoading();
 
 })
 .catch(err=>{
-  console.error("ERROR API:", err);
+  console.error("ERROR:", err);
   hideLoading();
 });
 
-/* ================= DROPDOWN ================= */
-function isiDropdown(){
 
-  if(!filterProduk) return;
+/* ================= GABUNG HISTORI ================= */
+function bangunHistoriGabungan(){
 
-  filterProduk.innerHTML = "";
-
-  const optAll = document.createElement("option");
-  optAll.value = "";
-  optAll.textContent = "Semua Produk";
-  filterProduk.appendChild(optAll);
-
-  const skuSet = new Set([
-    ...penjualanRaw.map(r=>String(r[5]).trim()),
-    ...masterHistory.map(r=>String(r[4]).trim())
-  ]);
-
-  [...skuSet].sort().forEach(sku=>{
-    const opt = document.createElement("option");
-    opt.value = sku;
-    opt.textContent = produkMap[sku] || sku;
-    filterProduk.appendChild(opt);
-  });
-}
-
-/* ================= FORECAST ================= */
-function hitungForecast(sku, bulan, tahun){
+  historiGabungan = {};
 
   const mapBulan = {
     Januari:1, Februari:2, Maret:3, April:4,
@@ -201,41 +176,91 @@ function hitungForecast(sku, bulan, tahun){
     September:9, Oktober:10, November:11, Desember:12
   };
 
-  let dataSKU = [];
-
+  // 1️⃣ Dari MasterHistory
   masterHistory.forEach(r=>{
-    const th = Number(r[1]);
-    const bl = mapBulan[String(r[2]).trim()];
+    const sku = String(r[4]).trim();
+    const tahun = Number(r[1]);
+    const bulan = mapBulan[String(r[2]).trim()];
     const qty = Number(r[3]) || 0;
-    const skuData = String(r[4]).trim();
 
-    if(skuData === sku){
-      dataSKU.push({tahun: th, bulan: bl, qty: qty});
+    if(!historiGabungan[sku]) historiGabungan[sku] = [];
+
+    historiGabungan[sku].push({tahun, bulan, qty});
+  });
+
+  // 2️⃣ Dari Penjualan (diringkas per bulan)
+  penjualanRaw.forEach(r=>{
+    const date = new Date(r[0]);
+    const sku = String(r[5]).trim();
+    const tahun = date.getFullYear();
+    const bulan = date.getMonth()+1;
+    const qty = Number(r[4]) || 0;
+
+    if(!historiGabungan[sku]) historiGabungan[sku] = [];
+
+    const existing = historiGabungan[sku]
+      .find(d=>d.tahun===tahun && d.bulan===bulan);
+
+    if(existing){
+      existing.qty += qty;
+    } else {
+      historiGabungan[sku].push({tahun, bulan, qty});
     }
   });
 
-  dataSKU.sort((a,b)=>{
-    if(a.tahun!==b.tahun) return a.tahun-b.tahun;
-    return a.bulan-b.bulan;
+  // 3️⃣ Urutkan semua histori
+  Object.keys(historiGabungan).forEach(sku=>{
+    historiGabungan[sku].sort((a,b)=>{
+      if(a.tahun!==b.tahun) return a.tahun-b.tahun;
+      return a.bulan-b.bulan;
+    });
   });
 
-  const index = dataSKU.findIndex(d=>d.tahun===tahun && d.bulan===bulan);
-  const i = index===-1 ? dataSKU.length : index;
+}
 
-  const last3 = dataSKU.slice(Math.max(0,i-3), i);
+
+/* ================= DROPDOWN ================= */
+function isiDropdown(){
+
+  filterProduk.innerHTML="";
+
+  const optAll=document.createElement("option");
+  optAll.value="";
+  optAll.textContent="Semua Produk";
+  filterProduk.appendChild(optAll);
+
+  Object.keys(historiGabungan).sort().forEach(sku=>{
+    const opt=document.createElement("option");
+    opt.value=sku;
+    opt.textContent=produkMap[sku] || sku;
+    filterProduk.appendChild(opt);
+  });
+
+}
+
+
+/* ================= FORECAST ================= */
+function hitungForecast(sku, bulan, tahun){
+
+  const data = historiGabungan[sku] || [];
+
+  const index = data.findIndex(d=>d.tahun===tahun && d.bulan===bulan);
+  const i = index===-1 ? data.length : index;
+
+  const last3 = data.slice(Math.max(0,i-3), i);
 
   if(last3.length===0) return 0;
 
   let forecast=0;
 
   if(last3.length===1){
-    forecast=last3[0].qty;
-  } 
+    forecast = last3[0].qty;
+  }
   else if(last3.length===2){
-    forecast=(last3[0].qty*0.4)+(last3[1].qty*0.6);
-  } 
-  else {
-    forecast=
+    forecast = (last3[0].qty*0.4)+(last3[1].qty*0.6);
+  }
+  else{
+    forecast =
       (last3[0].qty*0.2)+
       (last3[1].qty*0.3)+
       (last3[2].qty*0.5);
@@ -244,18 +269,19 @@ function hitungForecast(sku, bulan, tahun){
   return Math.round(forecast*1.10); // +10% safety
 }
 
+
 /* ================= AKURASI ================= */
-function hitungAkurasi(actual, forecast){
-  if(actual === 0) return "-";
-  const error = Math.abs(actual - forecast);
-  const acc = 100 - ((error / actual) * 100);
-  return acc.toFixed(1) + "%";
+function hitungAkurasi(actual,forecast){
+  if(actual===0) return "-";
+  const error=Math.abs(actual-forecast);
+  return (100-((error/actual)*100)).toFixed(1)+"%";
 }
+
 
 /* ================= UPDATE ================= */
 function updateForecast(){
 
-  const sku = filterProduk.value;
+  const skuFilter = filterProduk.value;
   const bulan = Number(filterBulan.value);
   const tahun = Number(filterTahun.value);
 
@@ -263,34 +289,27 @@ function updateForecast(){
   let totalActual=0;
   let totalValue=0;
 
-  const allSKU = new Set([
-    ...penjualanRaw.map(r=>String(r[5]).trim()),
-    ...masterHistory.map(r=>String(r[4]).trim())
-  ]);
-
-  const tbody = document.getElementById("forecastTableBody");
+  const tbody=document.getElementById("forecastTableBody");
   if(tbody) tbody.innerHTML="";
 
-  allSKU.forEach(s=>{
+  Object.keys(historiGabungan).forEach(sku=>{
 
-    if(sku && s!==sku) return;
+    if(skuFilter && sku!==skuFilter) return;
 
-    const forecastQty = hitungForecast(s,bulan,tahun);
+    const forecastQty = hitungForecast(sku,bulan,tahun);
 
-    // Actual dari penjualan
+    // actual dari penjualan saja
     let actualQty=0;
     penjualanRaw.forEach(r=>{
-      const date = new Date(r[0]);
-      const th = date.getFullYear();
-      const bl = date.getMonth()+1;
-      const skuData = String(r[5]).trim();
-
-      if(skuData===s && th===tahun && bl===bulan){
+      const date=new Date(r[0]);
+      const th=date.getFullYear();
+      const bl=date.getMonth()+1;
+      if(String(r[5]).trim()===sku && th===tahun && bl===bulan){
         actualQty+=Number(r[4])||0;
       }
     });
 
-    const harga = hargaMap[s]||0;
+    const harga = hargaMap[sku]||0;
     const value = forecastQty*harga;
 
     totalForecast+=forecastQty;
@@ -300,7 +319,7 @@ function updateForecast(){
     if(tbody){
       const tr=document.createElement("tr");
       tr.innerHTML=`
-        <td>${produkMap[s]||s}</td>
+        <td>${produkMap[sku]||sku}</td>
         <td>${forecastQty}</td>
         <td>Rp ${harga.toLocaleString("id-ID")}</td>
         <td>Rp ${value.toLocaleString("id-ID")}</td>
@@ -315,10 +334,11 @@ function updateForecast(){
   document.getElementById("forecastValue").textContent =
     "Rp "+totalValue.toLocaleString("id-ID");
   document.getElementById("totalForecast").textContent = totalForecast;
+  document.getElementById("akurasi").textContent =
+    hitungAkurasi(totalActual,totalForecast);
 
-  const akurasi = hitungAkurasi(totalActual, totalForecast);
-  document.getElementById("akurasi").textContent = akurasi;
 }
+
 
 /* ================= EVENT ================= */
 filterProduk.addEventListener("change",updateForecast);
@@ -329,6 +349,7 @@ filterTahun.addEventListener("change",updateForecast);
 </body>
 
 </html>
+
 
 
 
