@@ -324,7 +324,7 @@ tbody tr:hover {
 .export-container {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: -10px;
+  margin-bottom: -20px;
 }
 
 .btn-export {
@@ -340,4 +340,5 @@ tbody tr:hover {
 .btn-export:hover {
   background-color: #c94d22;
 }
+
 
