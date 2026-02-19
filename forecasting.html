@@ -118,64 +118,86 @@
 
 <script>
 
-/* ================= CONFIG ================= */
+/* =========================================================
+   ======================= CONFIG ==========================
+========================================================= */
 const API_URL = "https://script.google.com/macros/s/AKfycbyjpAukfJYA-lEXqV6F2HfOFlOLSOw-BUCiS_boUxfZISsv-DBsun0xiIkqeChRWluJ/exec";
 
-/* ================= ELEMENT ================= */
+
+/* =========================================================
+   ======================= ELEMENT =========================
+========================================================= */
 const filterProduk = document.getElementById("filterProduk");
 const filterBulan  = document.getElementById("filterBulan");
 const filterTahun  = document.getElementById("filterTahun");
 const loading      = document.getElementById("loading");
+const tableBody    = document.getElementById("forecastTableBody");
 
-/* ================= STATE ================= */
+
+/* =========================================================
+   ========================= STATE =========================
+========================================================= */
 let penjualanRaw = [];
 let masterHistory = [];
 let masterProduk = [];
 let hargaMap = {};
 let produkMap = {};
-let historiGabungan = {}; // SKU -> array histori bulanan
+let historiGabungan = {};
+let kategoriAktif = "";
 
-/* ================= LOADING ================= */
+
+/* =========================================================
+   ======================== LOADING ========================
+========================================================= */
 function showLoading(){ if(loading) loading.style.display="flex"; }
 function hideLoading(){ if(loading) loading.style.display="none"; }
 
-/* ================= FETCH ================= */
-showLoading();
 
-fetch(API_URL)
-.then(res=>res.json())
-.then(data=>{
+/* =========================================================
+   ========================= FETCH =========================
+========================================================= */
+async function loadData(){
 
-  penjualanRaw  = (data.penjualan || []).slice(1);
-  masterHistory = (data.masterHistory || []).slice(1);
-  masterProduk  = (data.masterProduk || []).slice(1);
+  try{
+    showLoading();
 
-  // Mapping Produk
-  masterProduk.forEach(r=>{
-    const sku = String(r[0]).trim();
-    const nama = r[1];
-    if(sku) produkMap[sku] = nama;
-  });
+    const res = await fetch(API_URL);
+    const data = await res.json();
 
-  // Mapping Harga
-  (data.masterHarga || []).slice(1).forEach(r=>{
-    const sku = String(r[0]).trim();
-    hargaMap[sku] = Number(r[2]) || 0;
-  });
+    penjualanRaw  = (data.penjualan || []).slice(1);
+    masterHistory = (data.masterHistory || []).slice(1);
+    masterProduk  = (data.masterProduk || []).slice(1);
 
-  bangunHistoriGabungan();
-  isiDropdown();
-  updateForecast();
-  hideLoading();
+    // Mapping Produk
+    masterProduk.forEach(r=>{
+      const sku = String(r[0]).trim();
+      if(sku) produkMap[sku] = r[1];
+    });
 
-})
-.catch(err=>{
-  console.error("ERROR:", err);
-  hideLoading();
-});
+    // Mapping Harga
+    (data.masterHarga || []).slice(1).forEach(r=>{
+      const sku = String(r[0]).trim();
+      hargaMap[sku] = Number(r[2]) || 0;
+    });
+
+    bangunHistoriGabungan();
+    isiDropdown();
+    updateForecast();
+
+  }catch(err){
+    console.error("ERROR:", err);
+  }finally{
+    hideLoading();
+  }
+
+}
+
+loadData();
 
 
-/* ================= GABUNG HISTORI ================= */
+/* =========================================================
+   ================= GABUNG HISTORI DATA ===================
+========================================================= */
 function bangunHistoriGabungan(){
 
   historiGabungan = {};
@@ -186,7 +208,7 @@ function bangunHistoriGabungan(){
     September:9, Oktober:10, November:11, Desember:12
   };
 
-  // 1️⃣ Dari MasterHistory
+  // Dari MasterHistory
   masterHistory.forEach(r=>{
     const sku = String(r[4]).trim();
     const tahun = Number(r[1]);
@@ -194,11 +216,10 @@ function bangunHistoriGabungan(){
     const qty = Number(r[3]) || 0;
 
     if(!historiGabungan[sku]) historiGabungan[sku] = [];
-
     historiGabungan[sku].push({tahun, bulan, qty});
   });
 
-  // 2️⃣ Dari Penjualan (diringkas per bulan)
+  // Dari Penjualan
   penjualanRaw.forEach(r=>{
     const date = new Date(r[0]);
     const sku = String(r[5]).trim();
@@ -211,129 +232,151 @@ function bangunHistoriGabungan(){
     const existing = historiGabungan[sku]
       .find(d=>d.tahun===tahun && d.bulan===bulan);
 
-    if(existing){
-      existing.qty += qty;
-    } else {
-      historiGabungan[sku].push({tahun, bulan, qty});
-    }
+    if(existing) existing.qty += qty;
+    else historiGabungan[sku].push({tahun, bulan, qty});
   });
 
-  // 3️⃣ Urutkan semua histori
+  // Urutkan histori
   Object.keys(historiGabungan).forEach(sku=>{
     historiGabungan[sku].sort((a,b)=>{
       if(a.tahun!==b.tahun) return a.tahun-b.tahun;
       return a.bulan-b.bulan;
     });
   });
-
 }
 
 
-/* ================= DROPDOWN ================= */
+/* =========================================================
+   ===================== DROPDOWN PRODUK ===================
+========================================================= */
 function isiDropdown(){
 
-  filterProduk.innerHTML="";
+  if(!filterProduk) return;
 
-  const optAll=document.createElement("option");
-  optAll.value="";
-  optAll.textContent="Semua Produk";
+  filterProduk.innerHTML = "";
+
+  const optAll = document.createElement("option");
+  optAll.value = "";
+  optAll.textContent = "Semua Produk";
   filterProduk.appendChild(optAll);
 
   Object.keys(historiGabungan).sort().forEach(sku=>{
-    const opt=document.createElement("option");
-    opt.value=sku;
-    opt.textContent=produkMap[sku] || sku;
+    const opt = document.createElement("option");
+    opt.value = sku;
+    opt.textContent = produkMap[sku] || sku;
     filterProduk.appendChild(opt);
   });
 
 }
-/* ================= PEMBULATAN NAIK ================= */
-    function pembulatanNaik(angka){
 
-  if(angka <= 0) return 0;
 
-  if(angka < 10){
-    return 10;
-  }
+/* =========================================================
+   ==================== KATEGORI PRODUK ====================
+========================================================= */
+function getKategori(namaProduk){
 
-  if(angka < 100){
-    return Math.ceil(angka / 10) * 10;
-  }
+  if(!namaProduk) return "Lain-lain";
 
-  if(angka < 1000){
-    return Math.ceil(angka / 50) * 50;
-  }
+  const kataDepan = namaProduk.trim().split(" ")[0].toLowerCase();
 
-  return Math.ceil(angka / 100) * 100;
+  if(kataDepan === "modul") return "Modul";
+  if(kataDepan === "buku") return "Panduan";
+  if(kataDepan === "poster" || kataDepan === "flash") return "Poster";
+
+  if(["merah","kuning","biru","my"].includes(kataDepan))
+    return "Seragam";
+
+  return "Lain-lain";
 }
 
-/* ================= FORECAST ================= */
+
+/* =========================================================
+   ==================== PEMBULATAN NAIK ====================
+========================================================= */
+function pembulatanNaik(angka){
+
+  if(angka <= 0) return 0;
+  if(angka < 10) return 10;
+  if(angka < 100) return Math.ceil(angka/10)*10;
+  if(angka < 1000) return Math.ceil(angka/50)*50;
+  return Math.ceil(angka/100)*100;
+
+}
+
+
+/* =========================================================
+   ======================= FORECAST ========================
+========================================================= */
 function hitungForecast(sku, bulan, tahun){
 
   const data = historiGabungan[sku] || [];
 
   const index = data.findIndex(d=>d.tahun===tahun && d.bulan===bulan);
   const i = index===-1 ? data.length : index;
-
   const last3 = data.slice(Math.max(0,i-3), i);
 
   if(last3.length===0) return 0;
 
-  let forecast=0;
+  let forecast = 0;
 
-  if(last3.length===1){
-    forecast = last3[0].qty;
-  }
-  else if(last3.length===2){
+  if(last3.length===1) forecast = last3[0].qty;
+  else if(last3.length===2)
     forecast = (last3[0].qty*0.4)+(last3[1].qty*0.6);
-  }
-  else{
+  else
     forecast =
       (last3[0].qty*0.2)+
       (last3[1].qty*0.3)+
       (last3[2].qty*0.5);
-  }
 
-  const withSafety = Math.round(forecast * 1.10);
-return pembulatanNaik(withSafety); // +10% safety
+  const withSafety = Math.round(forecast*1.10);
+  return pembulatanNaik(withSafety);
+
 }
 
 
-/* ================= AKURASI ================= */
+/* =========================================================
+   ======================= AKURASI =========================
+========================================================= */
 function hitungAkurasi(actual,forecast){
   if(actual===0) return "-";
-  const error=Math.abs(actual-forecast);
+  const error = Math.abs(actual-forecast);
   return (100-((error/actual)*100)).toFixed(1)+"%";
 }
 
 
-/* ================= UPDATE ================= */
+/* =========================================================
+   ======================= UPDATE UI =======================
+========================================================= */
 function updateForecast(){
 
-  const skuFilter = filterProduk.value;
-  const bulan = Number(filterBulan.value);
-  const tahun = Number(filterTahun.value);
+  const skuFilter = filterProduk?.value || "";
+  const bulan = Number(filterBulan?.value);
+  const tahun = Number(filterTahun?.value);
 
   let totalForecast=0;
   let totalActual=0;
   let totalValue=0;
 
-  const tbody=document.getElementById("forecastTableBody");
-  if(tbody) tbody.innerHTML="";
+  if(tableBody) tableBody.innerHTML="";
 
   Object.keys(historiGabungan).forEach(sku=>{
 
+    const namaProduk = produkMap[sku] || sku;
+    const kategoriProduk = getKategori(namaProduk);
+
     if(skuFilter && sku!==skuFilter) return;
+    if(kategoriAktif && kategoriProduk!==kategoriAktif) return;
 
     const forecastQty = hitungForecast(sku,bulan,tahun);
 
-    // actual dari penjualan saja
     let actualQty=0;
     penjualanRaw.forEach(r=>{
       const date=new Date(r[0]);
-      const th=date.getFullYear();
-      const bl=date.getMonth()+1;
-      if(String(r[5]).trim()===sku && th===tahun && bl===bulan){
+      if(
+        String(r[5]).trim()===sku &&
+        date.getFullYear()===tahun &&
+        date.getMonth()+1===bulan
+      ){
         actualQty+=Number(r[4])||0;
       }
     });
@@ -345,24 +388,23 @@ function updateForecast(){
     totalActual+=actualQty;
     totalValue+=value;
 
-    if(tbody){
-      const selisih = forecastQty - actualQty;
+    if(tableBody){
+      const selisih = forecastQty-actualQty;
 
-const warnaSelisih =
-  selisih > 0 ? "style='color:orange;font-weight:bold'" :
-  selisih < 0 ? "style='color:red;font-weight:bold'" :
-  "style='color:green;font-weight:bold'";
+      const warnaSelisih =
+        selisih>0 ? "orange" :
+        selisih<0 ? "red" : "green";
 
-const tr=document.createElement("tr");
-tr.innerHTML=`
-  <td>${produkMap[sku]||sku}</td>
-  <td>${forecastQty}</td>
-  <td>${actualQty}</td>
-  <td ${warnaSelisih}>${selisih}</td>
-  <td>Rp ${harga.toLocaleString("id-ID")}</td>
-  <td>Rp ${value.toLocaleString("id-ID")}</td>
-`;
-      tbody.appendChild(tr);
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td>${namaProduk}</td>
+        <td>${forecastQty}</td>
+        <td>${actualQty}</td>
+        <td style="color:${warnaSelisih};font-weight:bold">${selisih}</td>
+        <td>Rp ${harga.toLocaleString("id-ID")}</td>
+        <td>Rp ${value.toLocaleString("id-ID")}</td>
+      `;
+      tableBody.appendChild(tr);
     }
 
   });
@@ -378,15 +420,34 @@ tr.innerHTML=`
 }
 
 
-/* ================= EVENT ================= */
-filterProduk.addEventListener("change",updateForecast);
-filterBulan.addEventListener("change",updateForecast);
-filterTahun.addEventListener("change",updateForecast);
+/* =========================================================
+   ========================= EVENT =========================
+========================================================= */
+
+// Filter dropdown
+filterProduk?.addEventListener("change",updateForecast);
+filterBulan?.addEventListener("change",updateForecast);
+filterTahun?.addEventListener("change",updateForecast);
+
+// Filter kategori button
+document.querySelectorAll(".btn-kategori").forEach(btn=>{
+  btn.addEventListener("click",function(){
+
+    document.querySelectorAll(".btn-kategori")
+      .forEach(b=>b.classList.remove("active"));
+
+    this.classList.add("active");
+    kategoriAktif = this.dataset.kategori;
+    updateForecast();
+
+  });
+});
 
 </script>
 </body>
 
 </html>
+
 
 
 
