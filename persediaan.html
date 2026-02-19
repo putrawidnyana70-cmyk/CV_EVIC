@@ -283,23 +283,26 @@ printBtn.addEventListener("click", function () {
 <title>Stok Opname</title>
 
 <style>
-@page { size: A4 portrait; margin: 15mm; }
+@page {
+  size: A4 portrait;
+  margin: 15mm;
+}
 
 body{
-  font-family: Arial, sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   font-size: 12px;
-  margin:0;
+  width: 180mm;
+  margin: 0 auto;
+  color: #000;
 }
 
-.header{
-  width:100%;
-  margin-bottom:20px;
-}
+/* ================= HEADER ================= */
 
 .top-row{
   display:flex;
   justify-content:space-between;
-  align-items:flex-start;
+  align-items:center;
+  width:100%;
 }
 
 .logo{
@@ -308,17 +311,17 @@ body{
 
 .judul{
   text-align:center;
-  margin-top:10px;
+  margin-top:15px;
   margin-bottom:10px;
 }
 
 .judul h2{
   margin:0;
   font-size:18px;
+  letter-spacing:1px;
 }
 
 .info{
-  margin-top:5px;
   font-size:12px;
 }
 
@@ -330,31 +333,48 @@ body{
 
 .line{
   display:inline-block;
-  border-bottom:1px solid #000;
+  border-bottom:2px solid #000;   /* lebih tebal supaya tidak putus */
   width:180px;
   height:14px;
 }
 
+/* ================= TABLE ================= */
+
 table{
   width:100%;
   border-collapse:collapse;
+  table-layout:fixed;
   margin-top:15px;
 }
 
-th,td{
-  border:1px solid #000;
-  padding:6px;
+/* Border luar lebih tebal */
+table{
+  border:2px solid #000;
+}
+
+/* Border dalam tebal & solid */
+th, td{
+  border:1.5px solid #000;   /* ini kunci anti putus */
+  padding:6px 5px;
   font-size:11px;
+  vertical-align:middle;
 }
 
+/* Header table */
 th{
-  background:#f2f2f2;
+  background:#fff;           /* jangan abu-abu supaya tidak blur */
+  font-weight:bold;
 }
 
-td:nth-child(2){
-  text-align:left;
-  padding-left:8px;
-}
+/* Lebar kolom tetap supaya stabil */
+th:nth-child(1){ width:15%; }
+th:nth-child(2){ width:35%; text-align:left; padding-left:8px; }
+th:nth-child(3){ width:12%; }
+th:nth-child(4){ width:12%; }
+th:nth-child(5){ width:10%; }
+th:nth-child(6){ width:16%; }
+
+/* ================= FOOTER ================= */
 
 .footer{
   margin-top:60px;
@@ -461,6 +481,7 @@ document.querySelectorAll(".btn-kategori").forEach(btn=>{
 </body>
 
 </html>
+
 
 
 
