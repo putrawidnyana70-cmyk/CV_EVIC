@@ -140,6 +140,31 @@ header h1 {
     font-size: 14px;
     background: #fff;
 }
+.kategori-bar{
+  margin-top:15px;
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+.btn-kategori{
+  padding:6px 14px;
+  border:none;
+  background:#e0e0e0;
+  cursor:pointer;
+  border-radius:20px;
+  font-size:13px;
+  transition:0.2s;
+}
+
+.btn-kategori:hover{
+  background:#cfcfcf;
+}
+
+.btn-kategori.active{
+  background:#1976d2;
+  color:white;
+}
 
 /* TABLE */
 .table-container {
@@ -379,6 +404,7 @@ tbody tr:hover {
 .btn-export:hover {
   background-color: #c94d22;
 }
+
 
 
 
