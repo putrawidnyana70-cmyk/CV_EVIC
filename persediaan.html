@@ -56,9 +56,18 @@
     <option value="12">Desember</option>
   </select>
 </div>
+        <!-- FILTER KATEGORI -->
+<div class="kategori-bar">
+  <button class="btn-kategori active" data-kategori="">Semua</button>
+  <button class="btn-kategori" data-kategori="Modul">Modul</button>
+  <button class="btn-kategori" data-kategori="Poster">Poster</button>
+  <button class="btn-kategori" data-kategori="Panduan">Panduan</button>
+  <button class="btn-kategori" data-kategori="Seragam">Seragam</button>
+  <button class="btn-kategori" data-kategori="Lain-lain">Lain-lain</button>
+</div>
         <div class="export-container">
-  <button id="exportOpname" class="btn-export">
-    Export Stok Opname
+  <button id="printSO" class="btn-export">
+    Print SO
   </button>
 </div>
 
@@ -322,6 +331,7 @@ document.getElementById("exportOpname").addEventListener("click", function () {
 </body>
 
 </html>
+
 
 
 
