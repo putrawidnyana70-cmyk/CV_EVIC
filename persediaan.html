@@ -274,8 +274,6 @@ printBtn.addEventListener("click", function () {
     year: "numeric"
   });
 
-  const pic = prompt("Masukkan Nama PIC:");
-  const lokasi = prompt("Masukkan Lokasi Gudang:");
 
   let printWindow = window.open("", "_blank");
 
@@ -349,10 +347,9 @@ printBtn.addEventListener("click", function () {
     </div>
 
     <div class="header-right">
-      <div><b>PIC:</b> ${pic || "-"}</div>
-      <div><b>Lokasi Gudang:</b> ${lokasi || "-"}</div>
-    </div>
-  </div>
+  <div><b>PIC:</b> ________________________</div>
+  <div><b>Lokasi Gudang:</b> ________________________</div>
+</div>
 
   <table>
     <tr>
@@ -423,6 +420,7 @@ document.querySelectorAll(".btn-kategori").forEach(btn=>{
 </body>
 
 </html>
+
 
 
 
