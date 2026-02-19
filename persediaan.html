@@ -264,48 +264,140 @@ function applySearch(){
 }
 
 /* ================= PRINT SO ================= */
-printBtn.addEventListener("click",function(){
+printBtn.addEventListener("click", function () {
 
-  let printWindow=window.open("","_blank");
+  const bulanText = filterBulan.options[filterBulan.selectedIndex].text;
+  const today = new Date();
+  const tanggal = today.toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric"
+  });
 
-  let html=`
+  const pic = prompt("Masukkan Nama PIC:");
+  const lokasi = prompt("Masukkan Lokasi Gudang:");
+
+  let printWindow = window.open("", "_blank");
+
+  let html = `
   <html>
   <head>
   <title>Stok Opname</title>
   <style>
-    body{font-family:Arial;padding:20px}
-    table{width:100%;border-collapse:collapse}
-    th,td{border:1px solid #000;padding:6px;text-align:center}
-    th{background:#f2f2f2}
+    @page { size: A4 portrait; margin: 20mm; }
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 12px;
+      color: #000;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .logo {
+      height: 60px;
+    }
+    .header-right {
+      text-align: right;
+      font-size: 12px;
+    }
+    h2 {
+      margin: 5px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      border: 1px solid #000;
+      padding: 6px;
+      text-align: center;
+    }
+    th {
+      background: #f2f2f2;
+    }
+    .footer {
+      margin-top: 50px;
+      display: flex;
+      justify-content: space-between;
+      text-align: center;
+    }
+    .ttd {
+      width: 200px;
+    }
   </style>
   </head>
+
   <body>
-  <h2>STOK OPNAME</h2>
+
+  <div class="header">
+    <div class="header-left">
+      <img src="logo.jpg" class="logo">
+      <div>
+        <h2>STOK OPNAME</h2>
+        <div>Bulan: <b>${bulanText}</b></div>
+        <div>Tanggal Cetak: ${tanggal}</div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div><b>PIC:</b> ${pic || "-"}</div>
+      <div><b>Lokasi Gudang:</b> ${lokasi || "-"}</div>
+    </div>
+  </div>
+
   <table>
-  <tr>
-    <th>SKU</th>
-    <th>Produk</th>
-    <th>Stok Sistem</th>
-    <th>Stok Fisik</th>
-    <th>Selisih</th>
-    <th>Keterangan</th>
-  </tr>
+    <tr>
+      <th>SKU</th>
+      <th>Produk</th>
+      <th>Stok Sistem</th>
+      <th>Stok Fisik</th>
+      <th>Selisih</th>
+      <th>Keterangan</th>
+    </tr>
   `;
 
-  document.querySelectorAll("#stokBody tr").forEach(row=>{
-    const cols=row.querySelectorAll("td");
-    html+=`
+  document.querySelectorAll("#stokBody tr").forEach(row => {
+    const cols = row.querySelectorAll("td");
+
+    html += `
     <tr>
       <td>${cols[0].innerText}</td>
-      <td>${cols[1].innerText}</td>
+      <td style="text-align:left;padding-left:8px">${cols[1].innerText}</td>
       <td>${cols[5].innerText}</td>
       <td></td>
       <td></td>
       <td></td>
-    </tr>`;
+    </tr>
+    `;
   });
 
-  html+=`</table></body></html>`;
+  html += `
+  </table>
+
+  <div class="footer">
+    <div class="ttd">
+      Mengetahui,<br><br><br><br>
+      (__________________)
+    </div>
+
+    <div class="ttd">
+      Diperiksa Oleh,<br><br><br><br>
+      (__________________)
+    </div>
+  </div>
+
+  </body>
+  </html>
+  `;
 
   printWindow.document.write(html);
   printWindow.document.close();
@@ -331,6 +423,7 @@ document.querySelectorAll(".btn-kategori").forEach(btn=>{
 </body>
 
 </html>
+
 
 
 
