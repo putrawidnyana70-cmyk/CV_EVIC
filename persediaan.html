@@ -95,6 +95,7 @@
 </div>
 
 <script>
+
 /* ================= KONFIG ================= */
 const API_URL = "https://script.google.com/macros/s/AKfycbw7rTjjw37nRJ9kgQLHWSdfnO-1qLrjB6Z6yHF1yA8scm4CmZ3PrK49TXb-EB32tBWl/exec";
 const TAHUN_AKTIF = 2026;
@@ -104,233 +105,233 @@ const tbody = document.getElementById("stokBody");
 const filterBulan = document.getElementById("filterBulan");
 const searchStock = document.getElementById("searchStock");
 const loading = document.getElementById("loading");
+const printBtn = document.getElementById("printSO");
 
-/* ================= DATA ================= */
+/* ================= STATE ================= */
 let masterProduk = [];
 let pembelian = [];
 let penjualan = [];
+let kategoriAktif = "";
 
-/* ================= LOADING CONTROL ================= */
-function showLoading() {
-  loading.style.display = "flex";
-  loading.style.opacity = "1";
-  loading.style.pointerEvents = "auto";
-}
-function hideLoading() {
-  loading.style.opacity = "0";
-  loading.style.pointerEvents = "none";
-  setTimeout(() => loading.style.display = "none", 300);
-}
+/* ================= LOADING ================= */
+function showLoading(){ loading.style.display="flex"; }
+function hideLoading(){ loading.style.display="none"; }
 
-/* =====================================================
-   DATE PARSER (FINAL – ISO UTC DARI GAS)
-   ===================================================== */
-function parseSheetDate(tgl) {
-  if (!tgl) return null;
+/* ================= KATEGORI DETECTOR ================= */
+function getKategori(nama){
 
-  if (typeof tgl === "string" && tgl.endsWith("Z")) {
-    const d = new Date(tgl);
-    return {
-      tahun: d.getUTCFullYear(),
-      bulan: d.getUTCMonth() + 1
-    };
-  }
+  if(!nama) return "Lain-lain";
 
-  const s = String(tgl).toLowerCase().trim();
-  const map = {
-    januari:1,februari:2,maret:3,april:4,mei:5,juni:6,
-    juli:7,agustus:8,september:9,oktober:10,november:11,desember:12
-  };
-  const p = s.split(" ");
-  if (p.length >= 3 && map[p[1]]) {
-    return { tahun: +p[2], bulan: map[p[1]] };
-  }
+  const kata = nama.trim().split(" ")[0].toLowerCase();
 
-  return null;
+  if(kata==="modul") return "Modul";
+  if(kata==="buku") return "Panduan";
+  if(kata==="poster" || kata==="flash") return "Poster";
+  if(["merah","kuning","biru","my"].includes(kata)) return "Seragam";
+
+  return "Lain-lain";
 }
 
 /* ================= FETCH ================= */
 showLoading();
 
 fetch(API_URL)
-  .then(r => r.json())
-  .then(data => {
-    masterProduk = data.masterProduk || [];
-    pembelian = data.pembelian || [];
-    penjualan = data.penjualan || [];
+.then(r=>r.json())
+.then(data=>{
+  masterProduk = data.masterProduk || [];
+  pembelian = data.pembelian || [];
+  penjualan = data.penjualan || [];
 
-    // otomatis pilih bulan saat web dibuka
-    const now = new Date();
-    filterBulan.value = String(now.getMonth() + 1);
+  const now = new Date();
+  filterBulan.value = String(now.getMonth()+1);
 
-    render();
-    hideLoading();
-  })
-  .catch(err => {
-    console.error("API error:", err);
-    hideLoading();
-  });
-/* ================= FORECASTING ================= */
-  function hitungForecastPerProduk(sku, bulanAktif) {
+  render();
+  hideLoading();
+})
+.catch(err=>{
+  console.error(err);
+  hideLoading();
+});
 
-  let total3Bulan = 0;
-  let jumlahBulanTerpakai = 0;
-
-  for (let b = bulanAktif - 3; b < bulanAktif; b++) {
-    if (b <= 0) continue;
-
-    let totalBulan = 0;
-
-    penjualan.forEach(p => {
-      const d = parseSheetDate(p[0]);
-      if (!d || d.tahun !== TAHUN_AKTIF) return;
-      if (String(p[5]).trim() !== sku) return;
-      if (d.bulan === b) {
-        totalBulan += Number(p[4]) || 0;
-      }
-    });
-
-    if (totalBulan > 0) {
-      total3Bulan += totalBulan;
-      jumlahBulanTerpakai++;
-    }
+/* ================= DATE PARSER ================= */
+function parseSheetDate(tgl){
+  if(!tgl) return null;
+  if(typeof tgl==="string" && tgl.endsWith("Z")){
+    const d=new Date(tgl);
+    return {tahun:d.getUTCFullYear(),bulan:d.getUTCMonth()+1};
   }
-
-  if (jumlahBulanTerpakai === 0) return 0;
-
-  return Math.round(total3Bulan / jumlahBulanTerpakai);
+  return null;
 }
 
-/* =====================================================
-   RENDER – ROLLING STOK BULANAN
-   ===================================================== */
-function render() {
-  tbody.innerHTML = "";
-  const bulanDipilih = Number(filterBulan.value) || 1;
+/* ================= FORECAST ================= */
+function hitungForecastPerProduk(sku,bulanAktif){
 
-  masterProduk.forEach((mp, idx) => {
-    if (idx === 0) return; // skip header
+  let total=0,count=0;
 
-    const sku = String(mp[0] || "").trim();
-    if (!sku || sku.toLowerCase() === "sku") return;
+  for(let b=bulanAktif-3;b<bulanAktif;b++){
+    if(b<=0) continue;
+    let totalB=0;
 
-    const nama = mp[1] || "-";
-    let stok = Number(mp[2]) || 0;
+    penjualan.forEach(p=>{
+      const d=parseSheetDate(p[0]);
+      if(!d || d.tahun!==TAHUN_AKTIF) return;
+      if(String(p[5]).trim()!==sku) return;
+      if(d.bulan===b) totalB+=Number(p[4])||0;
+    });
 
-    let saldoAwal = stok;
-    let masuk = 0;
-    let keluar = 0;
+    if(totalB>0){ total+=totalB; count++; }
+  }
 
-    for (let b = 1; b <= bulanDipilih; b++) {
-      let beliBulan = 0;
-      let jualBulan = 0;
+  if(count===0) return 0;
+  return Math.round(total/count);
+}
 
-      pembelian.forEach(p => {
-        const d = parseSheetDate(p[0]);
-        if (!d || d.tahun !== TAHUN_AKTIF) return;
-        if (String(p[5]).trim() !== sku) return;
-        if (d.bulan === b) beliBulan += Number(p[4]) || 0;
+/* ================= RENDER ================= */
+function render(){
+
+  tbody.innerHTML="";
+  const bulanDipilih=Number(filterBulan.value)||1;
+
+  masterProduk.forEach((mp,idx)=>{
+    if(idx===0) return;
+
+    const sku=String(mp[0]||"").trim();
+    if(!sku || sku.toLowerCase()==="sku") return;
+
+    const nama=mp[1]||"-";
+    const kategoriProduk=getKategori(nama);
+
+    if(kategoriAktif && kategoriProduk!==kategoriAktif) return;
+
+    let stok=Number(mp[2])||0;
+    let saldoAwal=stok, masuk=0, keluar=0;
+
+    for(let b=1;b<=bulanDipilih;b++){
+
+      let beli=0,jual=0;
+
+      pembelian.forEach(p=>{
+        const d=parseSheetDate(p[0]);
+        if(!d||d.tahun!==TAHUN_AKTIF) return;
+        if(String(p[5]).trim()!==sku) return;
+        if(d.bulan===b) beli+=Number(p[4])||0;
       });
 
-      penjualan.forEach(p => {
-        const d = parseSheetDate(p[0]);
-        if (!d || d.tahun !== TAHUN_AKTIF) return;
-        if (String(p[5]).trim() !== sku) return;
-        if (d.bulan === b) jualBulan += Number(p[4]) || 0;
+      penjualan.forEach(p=>{
+        const d=parseSheetDate(p[0]);
+        if(!d||d.tahun!==TAHUN_AKTIF) return;
+        if(String(p[5]).trim()!==sku) return;
+        if(d.bulan===b) jual+=Number(p[4])||0;
       });
 
-      if (b === bulanDipilih) {
-        saldoAwal = stok;
-        masuk = beliBulan;
-        keluar = jualBulan;
+      if(b===bulanDipilih){
+        saldoAwal=stok;
+        masuk=beli;
+        keluar=jual;
       }
 
-      stok += beliBulan - jualBulan;
+      stok+=beli-jual;
     }
 
-     const forecast = hitungForecastPerProduk(sku, bulanDipilih);
-const restock = Math.max(forecast - stok, 0);
+    const forecast=hitungForecastPerProduk(sku,bulanDipilih);
+    const restock=Math.max(forecast-stok,0);
 
-    tbody.innerHTML += `
+    tbody.innerHTML+=`
 <tr>
-  <td>${sku}</td>
-  <td>${nama}</td>
-  <td>${saldoAwal}</td>
-  <td>${masuk}</td>
-  <td>${keluar}</td>
-  <td><b>${stok}</b></td>
-  <td>${forecast}</td>
-  <td style="color:${restock>0?'red':'green'}">
-    ${restock}
-  </td>
-</tr>
-`;
+<td>${sku}</td>
+<td>${nama}</td>
+<td>${saldoAwal}</td>
+<td>${masuk}</td>
+<td>${keluar}</td>
+<td><b>${stok}</b></td>
+<td>${forecast}</td>
+<td style="color:${restock>0?'red':'green'}">${restock}</td>
+</tr>`;
   });
 
   applySearch();
 }
 
 /* ================= SEARCH ================= */
-function applySearch() {
-  const key = searchStock.value.toLowerCase();
-  document.querySelectorAll("#stokBody tr").forEach(r => {
-    r.style.display =
+function applySearch(){
+  const key=searchStock.value.toLowerCase();
+  document.querySelectorAll("#stokBody tr").forEach(r=>{
+    r.style.display=
       r.children[0].innerText.toLowerCase().includes(key) ||
       r.children[1].innerText.toLowerCase().includes(key)
-        ? ""
-        : "none";
+      ? "" : "none";
   });
 }
 
-/* ================= EVENT ================= */
-filterBulan.addEventListener("change", () => {
-  showLoading();
-  setTimeout(() => {
-    render();
-    hideLoading();
-  }, 200);
-});
+/* ================= PRINT SO ================= */
+printBtn.addEventListener("click",function(){
 
-searchStock.addEventListener("keyup", applySearch);
+  let printWindow=window.open("","_blank");
 
-/* ================= EXPORT STOK OPNAME ================= */
-document.getElementById("exportOpname").addEventListener("click", function () {
+  let html=`
+  <html>
+  <head>
+  <title>Stok Opname</title>
+  <style>
+    body{font-family:Arial;padding:20px}
+    table{width:100%;border-collapse:collapse}
+    th,td{border:1px solid #000;padding:6px;text-align:center}
+    th{background:#f2f2f2}
+  </style>
+  </head>
+  <body>
+  <h2>STOK OPNAME</h2>
+  <table>
+  <tr>
+    <th>SKU</th>
+    <th>Produk</th>
+    <th>Stok Sistem</th>
+    <th>Stok Fisik</th>
+    <th>Selisih</th>
+    <th>Keterangan</th>
+  </tr>
+  `;
 
-  let csv = [];
-
-  // Header
-  csv.push(["SKU", "Produk", "Stok Sistem", "Stok Fisik", "Selisih", "Keterangan"]);
-
-  document.querySelectorAll("#stokBody tr").forEach(row => {
-    const cols = row.querySelectorAll("td");
-
-    const sku = cols[0].innerText;
-    const produk = cols[1].innerText;
-    const stokAkhir = cols[5].innerText;
-
-    csv.push([sku, produk, stokAkhir, "", "", ""]);
+  document.querySelectorAll("#stokBody tr").forEach(row=>{
+    const cols=row.querySelectorAll("td");
+    html+=`
+    <tr>
+      <td>${cols[0].innerText}</td>
+      <td>${cols[1].innerText}</td>
+      <td>${cols[5].innerText}</td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>`;
   });
 
-  let csvContent = csv.map(e => e.join(",")).join("\n");
+  html+=`</table></body></html>`;
 
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-
-  // 🔥 Tambah bulan + tanggal
-  const bulan = filterBulan.options[filterBulan.selectedIndex].text;
-  const today = new Date().toISOString().split("T")[0];
-
-  link.download = `stok_opname_${bulan}_${today}.csv`;
-  link.href = url;
-  link.click();
+  printWindow.document.write(html);
+  printWindow.document.close();
+  printWindow.print();
 });
+
+/* ================= EVENT ================= */
+filterBulan.addEventListener("change",()=>{render();});
+searchStock.addEventListener("keyup",applySearch);
+
+document.querySelectorAll(".btn-kategori").forEach(btn=>{
+  btn.addEventListener("click",function(){
+    document.querySelectorAll(".btn-kategori")
+      .forEach(b=>b.classList.remove("active"));
+    this.classList.add("active");
+    kategoriAktif=this.dataset.kategori;
+    render();
+  });
+});
+
 </script>
 
 </body>
 
 </html>
+
 
 
 
