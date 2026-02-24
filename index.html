@@ -128,22 +128,28 @@
 
 <section class="status-row">
 
-  <div class="status-box produk-box">
+ <div class="status-box produk-box">
+  <div class="status-header">
     <h3>Status Produk</h3>
-    <div id="listProdukStatus"></div>
+    <button id="exportProdukCSV" class="btn-export">Export CSV</button>
   </div>
+  <div id="listProdukStatus"></div>
+</div>
 
   <div class="status-box outlet-box">
+  <div class="status-header">
     <h3>Status Outlet</h3>
-
-    <select id="filterStatusOutlet">
-      <option value="">Semua</option>
-      <option value="aktif">Sudah Transaksi</option>
-      <option value="nonaktif">Belum Transaksi</option>
-    </select>
-
-    <div id="listOutletStatus"></div>
+    <button id="exportOutletCSV" class="btn-export">Export CSV</button>
   </div>
+
+  <select id="filterStatusOutlet">
+    <option value="">Semua</option>
+    <option value="aktif">Sudah Transaksi</option>
+    <option value="nonaktif">Belum Transaksi</option>
+  </select>
+
+  <div id="listOutletStatus"></div>
+</div>
 
 </section>
         </main>
@@ -176,6 +182,8 @@ const totalProdukTerjualEl = document.getElementById("totalProdukTerjual");
 const produkBelumTerjualEl = document.getElementById("produkBelumTerjual");
 const totalOutletAllEl     = document.getElementById("totalOutletAll");
 const listProdukStatus = document.getElementById("listProdukStatus");
+const exportProdukBtn = document.getElementById("exportProdukCSV");
+const exportOutletBtn = document.getElementById("exportOutletCSV");       
 
 
 
@@ -189,6 +197,8 @@ let chart          = null;
 let masterOutlet = [];
 let produkChart = null;
 let outletChart = null;
+let lastProdukBelumTerjual = [];
+let lastOutletStatus = [];
 
 /* =======================
    LOADING CONTROL
@@ -540,19 +550,31 @@ function renderOutletChart(dataMap){
   );
 }
 // =======================
-// FUNCTION RENDER OUTLET
+// FUNCTION RENDER OUTLET 
 // =======================
 function renderOutletStatus(allOutlet, outletTransaksi) {
 
   listOutletStatus.innerHTML = "";
   const statusFilter = filterStatusOutlet.value;
 
-  [...allOutlet].sort().forEach(outlet => {
+  // 🔥 Simpan untuk export
+  lastOutletStatus = [];
+
+  const sortedOutlet = [...allOutlet].sort();
+
+  sortedOutlet.forEach(outlet => {
 
     const isAktif = outletTransaksi.has(outlet);
 
+    // Filter dropdown
     if (statusFilter === "aktif" && !isAktif) return;
     if (statusFilter === "nonaktif" && isAktif) return;
+
+    // 🔥 Simpan data yang tampil (untuk CSV)
+    lastOutletStatus.push({
+      Outlet: outlet,
+      Status: isAktif ? "Sudah Transaksi" : "Belum Transaksi"
+    });
 
     const div = document.createElement("div");
     div.className = "outlet-row";
@@ -566,28 +588,49 @@ function renderOutletStatus(allOutlet, outletTransaksi) {
 
     listOutletStatus.appendChild(div);
   });
+
+  // Kalau kosong
+  if (lastOutletStatus.length === 0) {
+    listOutletStatus.innerHTML = `
+      <div style="padding:10px;color:#777;">
+        Tidak ada data sesuai filter
+      </div>
+    `;
+  }
 }
 // =======================
-// FUNCTION RENDER PRODUK
+// FUNCTION RENDER PRODUK 
 // =======================
 function renderProdukStatus(semuaProdukSet, produkTerjualSet) {
 
   listProdukStatus.innerHTML = "";
 
+  // 🔥 Filter produk belum terjual
   const belumTerjual = [...semuaProdukSet]
     .filter(p => !produkTerjualSet.has(p))
     .sort();
 
+  // 🔥 Simpan untuk export CSV
+  lastProdukBelumTerjual = [];
+
   if (belumTerjual.length === 0) {
+
     listProdukStatus.innerHTML = `
       <div style="padding:10px;color:green;font-weight:600;">
         Semua Produk Sudah Terjual ✅
       </div>
     `;
+
     return;
   }
 
   belumTerjual.forEach(produk => {
+
+    // 🔥 Simpan data untuk export
+    lastProdukBelumTerjual.push({
+      Produk: produk,
+      Status: "Belum Terjual"
+    });
 
     const div = document.createElement("div");
     div.className = "outlet-row";
@@ -613,4 +656,5 @@ filterStatusOutlet.addEventListener("change", updateKPI);
 </body>
 
 </html>
+
 
