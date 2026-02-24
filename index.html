@@ -652,9 +652,64 @@ filterProduk.addEventListener("change", updateKPI);
 filterBulan.addEventListener("change", updateKPI);
 filterStatusOutlet.addEventListener("change", updateKPI);
 
+/* =======================
+   EXPORT CSV SYSTEM (FINAL)
+======================= */
+
+// Universal CSV Downloader
+function downloadCSV(filename, rows) {
+
+  if (!rows || rows.length === 0) {
+    alert("Tidak ada data untuk diexport");
+    return;
+  }
+
+  const header = Object.keys(rows[0]).join(",");
+  const body = rows.map(row => Object.values(row).join(",")).join("\n");
+
+  const csvContent = "data:text/csv;charset=utf-8," + header + "\n" + body;
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", filename);
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+
+// =======================
+// EXPORT PRODUK
+// =======================
+exportProdukBtn.addEventListener("click", () => {
+
+  downloadCSV(
+    "status_produk_belum_terjual.csv",
+    lastProdukBelumTerjual
+  );
+
+});
+
+
+// =======================
+// EXPORT OUTLET
+// =======================
+exportOutletBtn.addEventListener("click", () => {
+
+  downloadCSV(
+    "status_outlet.csv",
+    lastOutletStatus
+  );
+
+});
+
 </script>
 </body>
 
 </html>
+
 
 
