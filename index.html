@@ -296,8 +296,17 @@ function updateKPI() {
     // MASTER OUTLET
     // =============================
     masterOutlet.forEach(r => {
-      if (r[1]) allOutlet.add(r[1]);
-    });
+
+  if (!r[1]) return;
+
+  const outletClean = r[1]
+    .toString()
+    .trim()
+    .replace(/\s+/g, " "); // hapus spasi double
+
+  allOutlet.add(outletClean);
+
+});
 
     // =============================
     // MASTER PRODUK (DARI PERSEDIAAN)
@@ -320,7 +329,9 @@ function updateKPI() {
 
   const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
 
-  const outlet = r[2];
+  const outlet = r[2]
+  ? r[2].toString().trim().replace(/\s+/g, " ")
+  : "";
   const produk = r[3];
   const qty    = Number(r[4]) || 0;
   const sku    = r[5];
@@ -710,6 +721,7 @@ exportOutletBtn.addEventListener("click", () => {
 </body>
 
 </html>
+
 
 
 
