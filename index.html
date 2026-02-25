@@ -199,6 +199,8 @@ let produkChart = null;
 let outletChart = null;
 let lastProdukBelumTerjual = [];
 let lastOutletStatus = [];
+let globalAllOutlet = new Set();
+let globalOutletTransaksi = new Set();
 
 /* =======================
    LOADING CONTROL
@@ -409,7 +411,9 @@ produkTerjualSet.delete("");
     totalOutletAllEl.textContent     = allOutlet.size;
     kpiOutletAktifEl.textContent     = outletTransaksi.size;
     kpiOutletNonAktifEl.textContent  =
-        allOutlet.size - outletTransaksi.size;
+    allOutlet.size - outletTransaksi.size;
+    globalAllOutlet = new Set(allOutlet);
+    globalOutletTransaksi = new Set(outletTransaksi);
     // =============================
 // HIDE TOTAL PRODUK JIKA FILTER PRODUK DIPILIH
 // =============================
@@ -823,91 +827,70 @@ exportProdukBtn.addEventListener("click", () => {
 
 exportOutletBtn.addEventListener("click", () => {
 
-  const bulanDipilih = filterBulan.value;
   const today = new Date();
-
-  const outletMap = {};
-  const lastOrderMap = {};
   const outletAnalisa = [];
 
-  penjualanRaw.forEach(r => {
+  globalAllOutlet.forEach(outlet => {
 
-    const outlet = r[2]
-      ? r[2].toString().trim().toUpperCase()
-      : "";
-    const qty = Number(r[4]) || 0;
-    const tgl = new Date(r[0]);
-    const bulanUTC = tgl.getUTCMonth() + 1;
+    if (!globalOutletTransaksi.has(outlet)) {
 
-    if (outlet === "") return;
+      // cari last order dari penjualanRaw (global)
+      let lastOrder = null;
+      let totalQty = 0;
 
-    // 🔥 Qty ikut bulan filter
-    if (!bulanDipilih || bulanUTC == bulanDipilih) {
-      outletMap[outlet] = (outletMap[outlet] || 0) + qty;
-    }
+      penjualanRaw.forEach(r => {
 
-    // 🔥 Last order global
-    if (!lastOrderMap[outlet] || tgl > lastOrderMap[outlet]) {
-      lastOrderMap[outlet] = tgl;
-    }
+        const outletData = r[2]
+          ? r[2]
+              .toString()
+              .normalize("NFKC")
+              .replace(/\u00A0/g, " ")
+              .trim()
+              .replace(/\s+/g, " ")
+              .toUpperCase()
+          : "";
 
-  });
+        if (outletData === outlet) {
 
-  const masterSet = new Set();
+          const qty = Number(r[4]) || 0;
+          const tgl = new Date(r[0]);
 
-masterOutlet.forEach(r => {
+          totalQty += qty;
 
-  const outlet = r[1]
-    ? r[1]
-        .toString()
-        .normalize("NFKC")
-        .replace(/\u00A0/g, " ")
-        .trim()
-        .replace(/\s+/g, " ")
-        .toUpperCase()
-    : "";
+          if (!lastOrder || tgl > lastOrder) {
+            lastOrder = tgl;
+          }
 
-  if (outlet !== "") {
-    masterSet.add(outlet);
-  }
+        }
 
-});
+      });
 
-// lalu loop pakai masterSet
-masterSet.forEach(outlet => {
+      let hariTidakOrder = "";
+      let kategori = "";
+      let rekomendasi = "";
 
-    if (outlet === "") return;
-
-    const totalQty = outletMap[outlet] || 0;
-    const lastOrder = lastOrderMap[outlet] || null;
-
-    let hariTidakOrder = "";
-    let kategori = "";
-    let rekomendasi = "";
-
-    if (!lastOrder) {
-      kategori = "Dormant";
-      rekomendasi = "Perlu Audit Internal";
-    } else {
-      hariTidakOrder = Math.floor((today - lastOrder) / (1000*60*60*24));
-
-      if (hariTidakOrder > 90) {
-        kategori = "Risiko Drop";
-        rekomendasi = "Follow up segera";
-      } else if (hariTidakOrder > 30) {
-        kategori = "Perlu Follow Up";
-        rekomendasi = "Hubungi outlet";
+      if (!lastOrder) {
+        kategori = "Dormant";
+        rekomendasi = "Belum pernah transaksi";
       } else {
-        kategori = "Aktif";
-        rekomendasi = "Normal";
-      }
-    }
 
-    if (totalQty === 0) {
+        hariTidakOrder = Math.floor((today - lastOrder) / (1000*60*60*24));
+
+        if (hariTidakOrder > 90) {
+          kategori = "Risiko Drop";
+          rekomendasi = "Follow up segera";
+        } else if (hariTidakOrder > 30) {
+          kategori = "Perlu Follow Up";
+          rekomendasi = "Hubungi outlet";
+        } else {
+          kategori = "Aktif";
+          rekomendasi = "Normal";
+        }
+      }
 
       outletAnalisa.push({
         Outlet: outlet,
-        Total_Qty_Bulan: totalQty,
+        Total_Qty_Seluruh_Waktu: totalQty,
         Terakhir_Order: lastOrder ? lastOrder.toISOString().split("T")[0] : "Tidak Pernah",
         Hari_Tidak_Order: hariTidakOrder,
         Kategori: kategori,
@@ -918,7 +901,7 @@ masterSet.forEach(outlet => {
 
   });
 
-  downloadCSV("analisa_outlet_bulan.csv", outletAnalisa);
+  downloadCSV("analisa_outlet_tidak_transaksi.csv", outletAnalisa);
 
 });
 
@@ -926,6 +909,7 @@ masterSet.forEach(outlet => {
 </body>
 
 </html>
+
 
 
 
