@@ -853,11 +853,28 @@ exportOutletBtn.addEventListener("click", () => {
 
   });
 
-  masterOutlet.forEach(r => {
+  const masterSet = new Set();
 
-    const outlet = r[1]
-      ? r[1].toString().trim().toUpperCase()
-      : "";
+masterOutlet.forEach(r => {
+
+  const outlet = r[1]
+    ? r[1]
+        .toString()
+        .normalize("NFKC")
+        .replace(/\u00A0/g, " ")
+        .trim()
+        .replace(/\s+/g, " ")
+        .toUpperCase()
+    : "";
+
+  if (outlet !== "") {
+    masterSet.add(outlet);
+  }
+
+});
+
+// lalu loop pakai masterSet
+masterSet.forEach(outlet => {
 
     if (outlet === "") return;
 
@@ -909,6 +926,7 @@ exportOutletBtn.addEventListener("click", () => {
 </body>
 
 </html>
+
 
 
 
