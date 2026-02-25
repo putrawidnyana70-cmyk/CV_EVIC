@@ -316,7 +316,15 @@ function updateKPI() {
     // MASTER PRODUK (DARI PERSEDIAAN)
     // =============================
     persediaan.forEach(r => {
-      const produk = r[1];
+      const produk = r[1]
+  ? r[1]
+      .toString()
+      .normalize("NFKC")
+      .replace(/\u00A0/g, " ")
+      .trim()
+      .replace(/\s+/g, " ")
+      .toUpperCase()
+  : "";
       const stok   = Number(r[5]) || 0;
 
       if (produk) semuaProdukSet.add(produk);
@@ -342,7 +350,15 @@ function updateKPI() {
       .replace(/\s+/g, " ")
       .toUpperCase()
   : "";
-  const produk = r[3];
+  const produk = r[3]
+  ? r[3]
+      .toString()
+      .normalize("NFKC")
+      .replace(/\u00A0/g, " ")
+      .trim()
+      .replace(/\s+/g, " ")
+      .toUpperCase()
+  : "";
   const qty    = Number(r[4]) || 0;
   const sku    = r[5];
   const harga  = hargaMap[sku] || 0;
@@ -373,6 +389,8 @@ function updateKPI() {
 // Hapus outlet kosong kalau ada
 allOutlet.delete("");
 outletTransaksi.delete("");
+semuaProdukSet.delete("");
+produkTerjualSet.delete("");
 
     // =============================
     // UPDATE KPI
@@ -735,6 +753,7 @@ exportOutletBtn.addEventListener("click", () => {
 </body>
 
 </html>
+
 
 
 
