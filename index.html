@@ -724,20 +724,17 @@ function downloadCSV(filename, rows) {
 }
 
 
-/* =======================
-   EXPORT ANALISA PRODUK
-======================= */
-
 exportProdukBtn.addEventListener("click", () => {
 
+  const bulanDipilih = filterBulan.value;
   const today = new Date();
-  const produkAnalisa = [];
 
   const produkMap = {};
   const lastSaleMap = {};
   const stokMap = {};
+  const produkAnalisa = [];
 
-  // Ambil stok dari persediaan
+  // Ambil stok
   persediaan.forEach(r => {
     const produk = r[1]
       ? r[1].toString().trim().toUpperCase()
@@ -749,21 +746,28 @@ exportProdukBtn.addEventListener("click", () => {
     }
   });
 
-  // Ambil transaksi & terakhir terjual
+  // Loop transaksi
   penjualanRaw.forEach(r => {
+
     const produk = r[3]
       ? r[3].toString().trim().toUpperCase()
       : "";
     const qty = Number(r[4]) || 0;
     const tgl = new Date(r[0]);
+    const bulanUTC = tgl.getUTCMonth() + 1;
 
-    if (produk !== "") {
+    if (produk === "") return;
+
+    // 🔥 Total bulan terfilter
+    if (!bulanDipilih || bulanUTC == bulanDipilih) {
       produkMap[produk] = (produkMap[produk] || 0) + qty;
-
-      if (!lastSaleMap[produk] || tgl > lastSaleMap[produk]) {
-        lastSaleMap[produk] = tgl;
-      }
     }
+
+    // 🔥 Last sale tetap global
+    if (!lastSaleMap[produk] || tgl > lastSaleMap[produk]) {
+      lastSaleMap[produk] = tgl;
+    }
+
   });
 
   Object.keys(stokMap).forEach(produk => {
@@ -778,34 +782,37 @@ exportProdukBtn.addEventListener("click", () => {
 
     if (!lastSale) {
       kategori = "Dead Stock";
-      rekomendasi = "Pertimbangkan diskon / bundling";
+      rekomendasi = "bundling";
     } else {
       hariTanpaJual = Math.floor((today - lastSale) / (1000*60*60*24));
 
       if (hariTanpaJual > 90) {
         kategori = "Slow Moving";
-        rekomendasi = "Evaluasi harga / promosi";
+        rekomendasi = "Evaluasi";
       } else {
         kategori = "Normal";
         rekomendasi = "Monitor";
       }
     }
 
+    // 🔥 hanya export produk yg tidak terjual di bulan tsb
     if (totalTerjual === 0) {
+
       produkAnalisa.push({
         Produk: produk,
         Stok: stok,
-        Total_Terjual: totalTerjual,
+        Total_Terjual_Bulan: totalTerjual,
         Terakhir_Terjual: lastSale ? lastSale.toISOString().split("T")[0] : "Tidak Pernah",
         Hari_Tanpa_Penjualan: hariTanpaJual,
         Kategori: kategori,
         Rekomendasi: rekomendasi
       });
+
     }
 
   });
 
-  downloadCSV("analisa_produk_tidak_aktif.csv", produkAnalisa);
+  downloadCSV("analisa_produk_bulan.csv", produkAnalisa);
 
 });
 
@@ -816,26 +823,34 @@ exportProdukBtn.addEventListener("click", () => {
 
 exportOutletBtn.addEventListener("click", () => {
 
+  const bulanDipilih = filterBulan.value;
   const today = new Date();
-  const outletAnalisa = [];
 
   const outletMap = {};
   const lastOrderMap = {};
+  const outletAnalisa = [];
 
   penjualanRaw.forEach(r => {
+
     const outlet = r[2]
       ? r[2].toString().trim().toUpperCase()
       : "";
     const qty = Number(r[4]) || 0;
     const tgl = new Date(r[0]);
+    const bulanUTC = tgl.getUTCMonth() + 1;
 
-    if (outlet !== "") {
+    if (outlet === "") return;
+
+    // 🔥 Qty ikut bulan filter
+    if (!bulanDipilih || bulanUTC == bulanDipilih) {
       outletMap[outlet] = (outletMap[outlet] || 0) + qty;
-
-      if (!lastOrderMap[outlet] || tgl > lastOrderMap[outlet]) {
-        lastOrderMap[outlet] = tgl;
-      }
     }
+
+    // 🔥 Last order global
+    if (!lastOrderMap[outlet] || tgl > lastOrderMap[outlet]) {
+      lastOrderMap[outlet] = tgl;
+    }
+
   });
 
   masterOutlet.forEach(r => {
@@ -855,7 +870,7 @@ exportOutletBtn.addEventListener("click", () => {
 
     if (!lastOrder) {
       kategori = "Dormant";
-      rekomendasi = "Perlu kunjungan sales";
+      rekomendasi = "Perlu Audit Internal";
     } else {
       hariTidakOrder = Math.floor((today - lastOrder) / (1000*60*60*24));
 
@@ -872,19 +887,21 @@ exportOutletBtn.addEventListener("click", () => {
     }
 
     if (totalQty === 0) {
+
       outletAnalisa.push({
         Outlet: outlet,
-        Total_Qty: totalQty,
+        Total_Qty_Bulan: totalQty,
         Terakhir_Order: lastOrder ? lastOrder.toISOString().split("T")[0] : "Tidak Pernah",
         Hari_Tidak_Order: hariTidakOrder,
         Kategori: kategori,
         Rekomendasi: rekomendasi
       });
+
     }
 
   });
 
-  downloadCSV("analisa_outlet_tidak_aktif.csv", outletAnalisa);
+  downloadCSV("analisa_outlet_bulan.csv", outletAnalisa);
 
 });
 
@@ -892,6 +909,7 @@ exportOutletBtn.addEventListener("click", () => {
 </body>
 
 </html>
+
 
 
 
