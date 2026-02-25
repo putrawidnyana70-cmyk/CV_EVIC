@@ -301,10 +301,14 @@ function updateKPI() {
 
   const outletClean = r[1]
     .toString()
+    .normalize("NFKC")             // hapus karakter aneh
+    .replace(/\u00A0/g, " ")       // hapus non-breaking space
     .trim()
-    .replace(/\s+/g, " "); // hapus spasi double
+    .replace(/\s+/g, " ")
+    .toUpperCase();                // samakan huruf besar kecil
 
-  allOutlet.add(outletClean);
+  if (outletClean !== "")
+    allOutlet.add(outletClean);
 
 });
 
@@ -330,7 +334,13 @@ function updateKPI() {
   const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
 
   const outlet = r[2]
-  ? r[2].toString().trim().replace(/\s+/g, " ")
+  ? r[2]
+      .toString()
+      .normalize("NFKC")
+      .replace(/\u00A0/g, " ")
+      .trim()
+      .replace(/\s+/g, " ")
+      .toUpperCase()
   : "";
   const produk = r[3];
   const qty    = Number(r[4]) || 0;
@@ -359,6 +369,10 @@ function updateKPI() {
   }
 
 });
+
+// Hapus outlet kosong kalau ada
+allOutlet.delete("");
+outletTransaksi.delete("");
 
     // =============================
     // UPDATE KPI
@@ -721,6 +735,7 @@ exportOutletBtn.addEventListener("click", () => {
 </body>
 
 </html>
+
 
 
 
