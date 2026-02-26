@@ -344,24 +344,8 @@ function updateKPI() {
 
   const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
 
-  const outlet = r[2]
-  ? r[2]
-      .toString()
-      .normalize("NFKC")
-      .replace(/\u00A0/g, " ")
-      .trim()
-      .replace(/\s+/g, " ")
-      .toUpperCase()
-  : "";
-  const produk = r[3]
-  ? r[3]
-      .toString()
-      .normalize("NFKC")
-      .replace(/\u00A0/g, " ")
-      .trim()
-      .replace(/\s+/g, " ")
-      .toUpperCase()
-  : "";
+  const outlet = r[2] || "";
+  const produk = r[3] || "";
   const qty    = Number(r[4]) || 0;
   const sku    = r[5];
   const harga  = hargaMap[sku] || 0;
@@ -839,15 +823,7 @@ exportOutletBtn.addEventListener("click", () => {
   masterOutlet.forEach(r => {
 
     if (!r[1]) return;
-
     const outletClean = r[1]
-      .toString()
-      .normalize("NFKC")
-      .replace(/\u00A0/g, " ")
-      .trim()
-      .replace(/\s+/g, " ")
-      .toUpperCase();
-
     if (outletClean !== "")
       allOutlet.add(outletClean);
 
@@ -857,27 +833,8 @@ exportOutletBtn.addEventListener("click", () => {
   penjualanRaw.forEach(r => {
 
     const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
-
-    const outlet = r[2]
-      ? r[2]
-          .toString()
-          .normalize("NFKC")
-          .replace(/\u00A0/g, " ")
-          .trim()
-          .replace(/\s+/g, " ")
-          .toUpperCase()
-      : "";
-
-    const produk = r[3]
-      ? r[3]
-          .toString()
-          .normalize("NFKC")
-          .replace(/\u00A0/g, " ")
-          .trim()
-          .replace(/\s+/g, " ")
-          .toUpperCase()
-      : "";
-
+    const outlet = r[2] || "";
+    const produk = r[3] || "";
     const okProduk = !produkDipilih || produk === produkDipilih;
     const okBulan  = !bulanDipilih  || bulanUTC == bulanDipilih;
 
@@ -900,14 +857,6 @@ exportOutletBtn.addEventListener("click", () => {
       penjualanRaw.forEach(r => {
 
         const outletData = r[2]
-          ? r[2]
-              .toString()
-              .normalize("NFKC")
-              .replace(/\u00A0/g, " ")
-              .trim()
-              .replace(/\s+/g, " ")
-              .toUpperCase()
-          : "";
 
         if (outletData === outlet) {
 
@@ -966,6 +915,7 @@ exportOutletBtn.addEventListener("click", () => {
 </body>
 
 </html>
+
 
 
 
