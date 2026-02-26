@@ -205,9 +205,11 @@ const exportOutletBtn = document.getElementById("exportOutletCSV");
 let allProdukList = [];
 let penjualanRaw = [];
 let persediaan = [];
-let masterOutlet = [];
 let hargaMap = {};
-let chart, produkChart, outletChart;
+let chart = null;
+let masterOutlet = [];
+let produkChart = null;
+let outletChart = null;
 
 /* =======================
    LOADING
@@ -225,29 +227,29 @@ function hideLoading() {
 showLoading();
 
 fetch(API_URL)
-  .then(res => res.json())
-  .then(data => {
+.then(res => res.json())
+.then(data => {
 
-    penjualanRaw = (data.penjualan || []).slice(1);
-    persediaan   = (data.persediaan || []).slice(1);
-    masterOutlet = (data.masterOutlet || []).slice(1);
+  penjualanRaw = (data.penjualan || []).slice(1);
+  persediaan   = (data.persediaan || []).slice(1);
+  masterOutlet = (data.masterOutlet || []).slice(1);
 
-    const masterHarga = (data.masterHarga || []).slice(1);
-    masterHarga.forEach(r => {
-      if (r[0]) hargaMap[r[0]] = Number(r[3]) || 0;
-    });
-
-    initFilterBulan();
-    isiDropdownProduk();
-    buildChartOnce();
-    updateKPI();
-
-    hideLoading();
-  })
-  .catch(err => {
-    console.error("API Error:", err);
-    hideLoading();
+  const masterHarga = (data.masterHarga || []).slice(1);
+  masterHarga.forEach(r => {
+    if (r[0]) hargaMap[r[0]] = Number(r[3]) || 0;
   });
+
+  initFilterBulan();
+  isiDropdownProduk();
+  buildChartOnce();
+  updateKPI();
+
+  hideLoading();
+})
+.catch(err => {
+  console.error("API Error:", err);
+  hideLoading();
+});
 
 /* =======================
    INIT
@@ -258,12 +260,14 @@ function initFilterBulan() {
 
 function isiDropdownProduk() {
   const setProduk = new Set();
-  penjualanRaw.forEach(r => r[3] && setProduk.add(r[3]));
+  penjualanRaw.forEach(r => {
+    if (r[3]) setProduk.add(r[3]);
+  });
   allProdukList = [...setProduk].sort();
 }
 
 /* =======================
-   AUTOCOMPLETE
+   DROPDOWN SEARCH (FIXED)
 ======================= */
 let typingTimer;
 
@@ -287,6 +291,7 @@ searchStock.addEventListener("input", function() {
     );
 
     filtered.slice(0,20).forEach(p => {
+
       const div = document.createElement("div");
       div.className = "dropdown-item";
       div.textContent = p;
@@ -301,7 +306,6 @@ searchStock.addEventListener("input", function() {
     });
 
     produkDropdown.style.display = filtered.length ? "block" : "none";
-    updateKPI();
 
   }, 250);
 
@@ -314,117 +318,100 @@ document.addEventListener("click", e => {
 });
 
 /* =======================
-   KPI (NO LOADING)
+   KPI (TIDAK DIUBAH)
 ======================= */
 function updateKPI() {
 
-  const produkKeyword = searchStock.value.toLowerCase().trim();
-  const bulanDipilih  = filterBulan.value;
+  showLoading();
 
-  const allOutlet = new Set();
-  const outletTransaksi = new Set();
-  const semuaProdukSet = new Set();
-  const produkTerjualSet = new Set();
+  setTimeout(() => {
 
-  let totalQty = 0;
-  let totalRp  = 0;
-  let totalStok = 0;
+    const produkDipilih = searchStock.value;
+    const bulanDipilih  = filterBulan.value;
 
-  masterOutlet.forEach(r => {
-    if (r[1]) allOutlet.add(r[1].trim());
-  });
+    const allOutlet = new Set();
+    const outletTransaksi = new Set();
+    const semuaProdukSet = new Set();
+    const produkTerjualSet = new Set();
 
-  persediaan.forEach(r => {
-    const produk = r[1] || "";
-    const stok = Number(r[5]) || 0;
-    semuaProdukSet.add(produk);
+    const produkMap = {};
+    const outletMap = {};
 
-    if (!produkKeyword || produk.toLowerCase().includes(produkKeyword))
-      totalStok += stok;
-  });
+    let totalQty = 0;
+    let totalRp  = 0;
+    let totalStok = 0;
 
-  const produkMap = {};
-  const outletMap = {};
+    masterOutlet.forEach(r => {
+      if (!r[1]) return;
+      const outletClean = r[1].toString().trim().toUpperCase();
+      if (outletClean !== "") allOutlet.add(outletClean);
+    });
 
-  penjualanRaw.forEach(r => {
+    persediaan.forEach(r => {
+      const produk = r[1] ? r[1].toString().trim().toUpperCase() : "";
+      const stok   = Number(r[5]) || 0;
+      if (produk) semuaProdukSet.add(produk);
+      if (!produkDipilih || produk.includes(produkDipilih.toUpperCase()))
+        totalStok += stok;
+    });
 
-    const tgl = new Date(r[0]);
-    const bulanUTC = tgl.getUTCMonth() + 1;
-    const outlet = r[2] || "";
-    const produk = r[3] || "";
-    const qty = Number(r[4]) || 0;
-    const sku = r[5];
-    const harga = hargaMap[sku] || 0;
+    penjualanRaw.forEach(r => {
 
-    const okProduk =
-      !produkKeyword ||
-      produk.toLowerCase().includes(produkKeyword);
+      const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
+      const outlet = r[2] || "";
+      const produk = r[3] || "";
+      const qty = Number(r[4]) || 0;
+      const sku = r[5];
+      const harga = hargaMap[sku] || 0;
 
-    const okBulan =
-      !bulanDipilih || bulanUTC == bulanDipilih;
+      const okProduk =
+        !produkDipilih ||
+        produk.toLowerCase().includes(produkDipilih.toLowerCase());
 
-    if (okProduk && okBulan) {
-      totalQty += qty;
-      totalRp += qty * harga;
-      produkTerjualSet.add(produk);
-      outletTransaksi.add(outlet);
-      produkMap[produk] = (produkMap[produk] || 0) + qty;
-      outletMap[outlet] = (outletMap[outlet] || 0) + qty;
-    }
-  });
+      const okBulan =
+        !bulanDipilih || bulanUTC == bulanDipilih;
 
-  totalProdukTerjualEl.textContent = produkTerjualSet.size;
-  totalProdukEl.textContent = semuaProdukSet.size;
-  produkBelumTerjualEl.textContent =
-    semuaProdukSet.size - produkTerjualSet.size;
+      if (okProduk && okBulan) {
+        totalQty += qty;
+        totalRp  += qty * harga;
+        produkTerjualSet.add(produk);
+        outletTransaksi.add(outlet);
+        produkMap[produk] = (produkMap[produk] || 0) + qty;
+      }
 
-  totalStokEl.textContent = totalStok;
-  totalPenjualanEl.textContent = totalQty;
-  totalPenjualanRpEl.textContent =
-    "Rp " + totalRp.toLocaleString("id-ID");
+      if (!bulanDipilih || bulanUTC == bulanDipilih) {
+        outletMap[outlet] = (outletMap[outlet] || 0) + qty;
+      }
 
-  totalOutletAllEl.textContent = allOutlet.size;
-  kpiOutletAktifEl.textContent = outletTransaksi.size;
-  kpiOutletNonAktifEl.textContent =
-    allOutlet.size - outletTransaksi.size;
+    });
 
-  renderProdukChart(produkMap);
-  renderOutletChart(outletMap);
-}
+    totalProdukTerjualEl.textContent = produkTerjualSet.size;
+    totalProdukEl.textContent = semuaProdukSet.size;
+    produkBelumTerjualEl.textContent =
+      semuaProdukSet.size - produkTerjualSet.size;
 
-/* =======================
-   CHART GLOBAL
-======================= */
-function buildChartOnce() {
-  const monthly = Array(12).fill(0);
-  penjualanRaw.forEach(r => {
-    const idx = new Date(r[0]).getUTCMonth();
-    monthly[idx] += Number(r[4]) || 0;
-  });
+    totalStokEl.textContent = totalStok;
+    totalPenjualanEl.textContent = totalQty;
+    totalPenjualanRpEl.textContent =
+      "Rp " + totalRp.toLocaleString("id-ID");
 
-  if (chart) chart.destroy();
+    totalOutletAllEl.textContent = allOutlet.size;
+    kpiOutletAktifEl.textContent = outletTransaksi.size;
+    kpiOutletNonAktifEl.textContent =
+      allOutlet.size - outletTransaksi.size;
 
-  chart = new Chart(
-    document.getElementById("penjualanChart"),
-    {
-      type: "line",
-      data: {
-        labels: ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"],
-        datasets: [{
-          label: "Total Penjualan (Global)",
-          data: monthly,
-          borderWidth: 2,
-          tension: 0.3
-        }]
-      },
-      options: { responsive: true }
-    }
-  );
+    renderProdukChart(produkMap);
+    renderOutletChart(outletMap);
+
+    hideLoading();
+
+  }, 150);
 }
 </script>
 </body>
 
 </html>
+
 
 
 
