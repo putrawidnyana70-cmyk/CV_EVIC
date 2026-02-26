@@ -35,9 +35,10 @@
                 <h1>Penjualan</h1>
                 <p>Ringkasan persediaan & transaksi</p>
                 <div class="filter-bar">
-  <select id="filterProduk">
-    <option value="">Semua Produk</option>
-  </select>
+                    
+  <div class="filter-bar">
+  <input type="text" id="searchStock" placeholder="Cari SKU atau Nama Produk">
+</div>
 
   <select id="filterBulan">
     <option value="">Semua Bulan</option>
@@ -167,6 +168,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbzY3q9H0Rh-j4xq3rQmfyNi
 /* =======================
    ELEMENT
 ======================= */
+const searchStock = document.getElementById("searchStock");
 const filterProduk = document.getElementById("filterProduk");
 const filterBulan  = document.getElementById("filterBulan");
 const loading      = document.getElementById("loading");
@@ -279,7 +281,7 @@ function updateKPI() {
 
   setTimeout(() => {
 
-    const produkDipilih = filterProduk.value;
+    const produkDipilih = searchStock.value;
     const bulanDipilih  = filterBulan.value;
 
     const allOutlet = new Set();
@@ -350,7 +352,10 @@ function updateKPI() {
   const sku    = r[5];
   const harga  = hargaMap[sku] || 0;
 
-  const okProduk = !produkDipilih || produk === produkDipilih;
+  const okProduk =
+  !produkDipilih ||
+  produk.toLowerCase().includes(produkDipilih.toLowerCase()) ||
+  (sku && sku.toLowerCase().includes(produkDipilih.toLowerCase()));
   const okBulan  = !bulanDipilih  || bulanUTC == bulanDipilih;
 
   if (okProduk && okBulan) {
@@ -680,9 +685,15 @@ function renderProdukStatus(semuaProdukSet, produkTerjualSet) {
 /* =======================
    EVENT
 ======================= */
-filterProduk.addEventListener("change", updateKPI);
+searchStock.addEventListener("input", updateKPI);
 filterBulan.addEventListener("change", updateKPI);
 filterStatusOutlet.addEventListener("change", updateKPI);
+       
+let typingTimer;
+searchStock.addEventListener("input", () => {
+  clearTimeout(typingTimer);
+  typingTimer = setTimeout(updateKPI, 300);
+});
 
 /* =======================
    EXPORT CSV SYSTEM (FINAL)
@@ -812,7 +823,7 @@ exportProdukBtn.addEventListener("click", () => {
 
 exportOutletBtn.addEventListener("click", () => {
 
-  const produkDipilih = filterProduk.value;
+  const produkDipilih = searchStock.value;
   const bulanDipilih  = filterBulan.value;
   const today = new Date();
 
@@ -835,7 +846,10 @@ exportOutletBtn.addEventListener("click", () => {
     const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
     const outlet = r[2] || "";
     const produk = r[3] || "";
-    const okProduk = !produkDipilih || produk === produkDipilih;
+    const okProduk =
+  !produkDipilih ||
+  produk.toLowerCase().includes(produkDipilih.toLowerCase()) ||
+  (sku && sku.toLowerCase().includes(produkDipilih.toLowerCase()));
     const okBulan  = !bulanDipilih  || bulanUTC == bulanDipilih;
 
     if (okProduk && okBulan) {
@@ -915,6 +929,7 @@ exportOutletBtn.addEventListener("click", () => {
 </body>
 
 </html>
+
 
 
 
