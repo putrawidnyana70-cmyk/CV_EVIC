@@ -1,194 +1,200 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<link rel="icon" type="image/png" href="logo.png">
-<title>Penjualan</title>
-<link rel="stylesheet" href="style.css">
+    <meta charset="UTF-8">
+    <link rel="icon" type="image/png" href="logo.png">
+    <title>Penjualan</title>
+    <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-<div class="app">
+    
+    <div class="app">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="logo">
+                <img src="logo.jpg" alt="Logo">
+                <h2>Warehouse</h2>
+            </div>
 
-<!-- SIDEBAR -->
-<aside class="sidebar">
-<div class="logo">
-<img src="logo.jpg" alt="Logo">
-<h2>Warehouse</h2>
-</div>
-<nav>
-<a href="index.html" class="active">Penjualan</a>
-<a href="penjualan.html">Audit Stok</a>
-<a href="persediaan.html">Persediaan</a>
-<a href="forecasting.html">Forecasting</a>
-</nav>
-</aside>
+            <nav>
+                <a href="index.html" class="active">Penjualan</a>
+                <a href="penjualan.html">Audit Stok</a>
+                <a href="persediaan.html">Persediaan</a>
+                <a href="forecasting.html">Forecasting</a>
+            </nav>
+        </aside>
 
-<!-- MAIN CONTENT -->
-<main class="content">
-
-<!-- LOADING -->
+        <!-- MAIN CONTENT -->
+        <main class="content">
+            <!-- LOADING -->
 <div id="loading">
-<img src="logo.jpg" alt="Loading">
-<p>Memuat data...</p>
+  <img src="logo.jpg" alt="Loading">
+  <p>Memuat data...</p>
 </div>
+            <header>
+                <h1>Penjualan</h1>
+                <p>Ringkasan persediaan & transaksi</p>
+                <div class="filter-bar">
+  <select id="filterProduk">
+    <option value="">Semua Produk</option>
+  </select>
 
-<header>
-<h1>Penjualan</h1>
-<p>Ringkasan persediaan & transaksi</p>
-
-<div class="filter-bar">
-<select id="filterProduk">
-<option value="">Semua Produk</option>
-</select>
-
-<select id="filterBulan">
-<option value="">Semua Bulan</option>
-<option value="1">Januari</option>
-<option value="2">Februari</option>
-<option value="3">Maret</option>
-<option value="4">April</option>
-<option value="5">Mei</option>
-<option value="6">Juni</option>
-<option value="7">Juli</option>
-<option value="8">Agustus</option>
-<option value="9">September</option>
-<option value="10">Oktober</option>
-<option value="11">November</option>
-<option value="12">Desember</option>
-</select>
+  <select id="filterBulan">
+    <option value="">Semua Bulan</option>
+    <option value="1">Januari</option>
+    <option value="2">Februari</option>
+    <option value="3">Maret</option>
+    <option value="4">April</option>
+    <option value="5">Mei</option>
+    <option value="6">Juni</option>
+    <option value="7">Juli</option>
+    <option value="8">Agustus</option>
+    <option value="9">September</option>
+    <option value="10">Oktober</option>
+    <option value="11">November</option>
+    <option value="12">Desember</option>
+  </select>
 </div>
-</header>
+            </header>
 
-<section class="cards">
-<div class="card">
-<h3>Total Produk Terjual</h3>
-<span id="totalProdukTerjual">0</span>
-<small>Jumlah produk unik yang memiliki transaksi</small>
-</div>
+            <section class="cards">
 
 <div class="card">
-<h3>Total Produk Aktif</h3>
-<span id="totalProduk">0</span>
-<small>Total seluruh produk yang tersedia</small>
+    <h3>Total Produk Terjual</h3>
+    <span id="totalProdukTerjual">0</span>
+    <small>Jumlah produk unik yang memiliki transaksi</small>
 </div>
 
 <div class="card">
-<h3>Produk Belum Terjual</h3>
-<span id="produkBelumTerjual">0</span>
-<small>Produk yang belum ada transaksi</small>
+    <h3>Total Produk Aktif</h3>
+    <span id="totalProduk">0</span>
+    <small>Total seluruh produk yang tersedia</small>
 </div>
 
 <div class="card">
-<h3>Total Stok</h3>
-<span id="totalStok">0</span>
+    <h3>Produk Belum Terjual</h3>
+    <span id="produkBelumTerjual">0</span>
+    <small>Produk yang belum ada transaksi</small>
 </div>
 
 <div class="card">
-<h3>Total Penjualan (Qty)</h3>
-<span id="totalPenjualan">0</span>
+    <h3>Total Stok</h3>
+    <span id="totalStok">0</span>
 </div>
 
 <div class="card">
-<h3>Total Penjualan (Rp)</h3>
-<span id="totalPenjualanRp">0</span>
+    <h3>Total Penjualan (Qty)</h3>
+    <span id="totalPenjualan">0</span>
 </div>
 
 <div class="card">
-<h3>Total Outlet Keseluruhan</h3>
-<span id="totalOutletAll">0</span>
+  <h3>Total Penjualan (Rp)</h3>
+  <span id="totalPenjualanRp">0</span>
 </div>
 
 <div class="card">
-<h3>Outlet Transaksi</h3>
-<span id="kpiOutletAktif">0</span>
+  <h3>Total Outlet Keseluruhan</h3>
+  <span id="totalOutletAll">0</span>
 </div>
 
 <div class="card">
-<h3>Outlet Tidak Transaksi</h3>
-<span id="kpiOutletNonAktif">0</span>
+  <h3>Outlet Transaksi</h3>
+  <span id="kpiOutletAktif">0</span>
 </div>
+
+<div class="card">
+  <h3>Outlet Tidak Transaksi</h3>
+  <span id="kpiOutletNonAktif">0</span>
+</div>
+
 </section>
 
 <section class="chart-row">
+
 <div class="chart-box">
-<h3>Kontribusi Produk (Tinggi → Rendah)</h3>
-<canvas id="produkChart" height="320"></canvas>
+  <h3>Kontribusi Produk (Tinggi → Rendah)</h3>
+  <canvas id="produkChart" height="320"></canvas>
 </div>
 
 <div class="chart-box">
-<h3>Grafik Penjualan per Bulan</h3>
-<canvas id="penjualanChart" height="320"></canvas>
+  <h3>Grafik Penjualan per Bulan</h3>
+  <canvas id="penjualanChart" height="320"></canvas>
 </div>
+
 </section>
-
 <section class="chart-box">
-<h3>Kontribusi Outlet (Terbanyak & Terendah)</h3>
-<canvas id="outletChart" height="320"></canvas>
+  <h3>Kontribusi Outlet (Terbanyak & Terendah)</h3>
+  <canvas id="outletChart" height="320"></canvas>
 </section>
 
 <section class="status-row">
 
-<div class="status-box produk-box">
-<div class="status-header">
-<h3>Status Produk</h3>
-<button id="exportProdukCSV" class="btn-export">Export CSV</button>
-</div>
-<div id="listProdukStatus"></div>
-</div>
-
-<div class="status-box outlet-box">
-<div class="status-header">
-<h3>Status Outlet</h3>
-<button id="exportOutletCSV" class="btn-export">Export CSV</button>
+ <div class="status-box produk-box">
+  <div class="status-header">
+    <h3>Status Produk</h3>
+    <button id="exportProdukCSV" class="btn-export">Export CSV</button>
+  </div>
+  <div id="listProdukStatus"></div>
 </div>
 
-<select id="filterStatusOutlet">
-<option value="">Semua</option>
-<option value="aktif">Sudah Transaksi</option>
-<option value="nonaktif">Belum Transaksi</option>
-</select>
+  <div class="status-box outlet-box">
+  <div class="status-header">
+    <h3>Status Outlet</h3>
+    <button id="exportOutletCSV" class="btn-export">Export CSV</button>
+  </div>
 
-<div id="listOutletStatus"></div>
+  <select id="filterStatusOutlet">
+    <option value="">Semua</option>
+    <option value="aktif">Sudah Transaksi</option>
+    <option value="nonaktif">Belum Transaksi</option>
+  </select>
+
+  <div id="listOutletStatus"></div>
 </div>
 
 </section>
+        </main>
+    </div>
 
-</main>
-</div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<script>
-
-/* ======================= KONFIGURASI ======================= */
+   <script>
+/* =======================
+   KONFIGURASI
+======================= */
 const API_URL = "https://script.google.com/macros/s/AKfycbzY3q9H0Rh-j4xq3rQmfyNiQBTRS_nECuWwouBEeNXMCDQwYHtBAj6Sic9KQ6P5aW7x/exec";
 
-/* ======================= ELEMENT ======================= */
+/* =======================
+   ELEMENT
+======================= */
 const filterProduk = document.getElementById("filterProduk");
-const filterBulan = document.getElementById("filterBulan");
-const loading = document.getElementById("loading");
-const totalProdukEl = document.getElementById("totalProduk");
-const totalStokEl = document.getElementById("totalStok");
-const totalPenjualanEl = document.getElementById("totalPenjualan");
-const totalPenjualanRpEl = document.getElementById("totalPenjualanRp");
-const kpiOutletAktifEl = document.getElementById("kpiOutletAktif");
+const filterBulan  = document.getElementById("filterBulan");
+const loading      = document.getElementById("loading");
+
+const totalProdukEl       = document.getElementById("totalProduk");
+const totalStokEl         = document.getElementById("totalStok");
+const totalPenjualanEl    = document.getElementById("totalPenjualan");
+const totalPenjualanRpEl  = document.getElementById("totalPenjualanRp");
+const kpiOutletAktifEl    = document.getElementById("kpiOutletAktif");
 const kpiOutletNonAktifEl = document.getElementById("kpiOutletNonAktif");
-const filterStatusOutlet = document.getElementById("filterStatusOutlet");
-const listOutletStatus = document.getElementById("listOutletStatus");
+const filterStatusOutlet  = document.getElementById("filterStatusOutlet");
+const listOutletStatus    = document.getElementById("listOutletStatus");
 const totalProdukTerjualEl = document.getElementById("totalProdukTerjual");
 const produkBelumTerjualEl = document.getElementById("produkBelumTerjual");
-const totalOutletAllEl = document.getElementById("totalOutletAll");
+const totalOutletAllEl     = document.getElementById("totalOutletAll");
 const listProdukStatus = document.getElementById("listProdukStatus");
 const exportProdukBtn = document.getElementById("exportProdukCSV");
-const exportOutletBtn = document.getElementById("exportOutletCSV");
+const exportOutletBtn = document.getElementById("exportOutletCSV");       
 
-/* ======================= STATE ======================= */
-let penjualanRaw = [];
-let persediaan = [];
-let hargaMap = {};
-let chart = null;
+
+
+/* =======================
+   STATE
+======================= */
+let penjualanRaw   = [];
+let persediaan     = [];
+let hargaMap       = {};
+let chart          = null;
 let masterOutlet = [];
 let produkChart = null;
 let outletChart = null;
@@ -197,256 +203,783 @@ let lastOutletStatus = [];
 let globalAllOutlet = new Set();
 let globalOutletTransaksi = new Set();
 
-/* ======================= LOADING CONTROL ======================= */
+/* =======================
+   LOADING CONTROL
+======================= */
 function showLoading() {
-loading.style.display = "flex";
-loading.style.opacity = "1";
-loading.style.pointerEvents = "auto";
+  loading.style.display = "flex";
+  loading.style.opacity = "1";
+  loading.style.pointerEvents = "auto";
 }
 
 function hideLoading() {
-loading.style.opacity = "0";
-loading.style.pointerEvents = "none";
-setTimeout(() => loading.style.display = "none", 300);
+  loading.style.opacity = "0";
+  loading.style.pointerEvents = "none";
+  setTimeout(() => loading.style.display = "none", 300);
 }
 
-/* ======================= FETCH DATA ======================= */
+/* =======================
+   FETCH DATA (1x SAJA)
+======================= */
 showLoading();
+
 fetch(API_URL)
-.then(res => res.json())
-.then(data => {
+  .then(res => res.json())
+  .then(data => {
+    penjualanRaw = (data.penjualan || []).slice(1);
+    persediaan   = (data.persediaan || []).slice(1);
+    masterOutlet = (data.masterOutlet || []).slice(1);
 
-penjualanRaw = (data.penjualan || []).slice(1);
-persediaan = (data.persediaan || []).slice(1);
-masterOutlet = (data.masterOutlet || []).slice(1);
+    // MASTER HARGA
+    const masterHarga = (data.masterHarga || []).slice(1);
+    masterHarga.forEach(r => {
+      const sku = r[0];
+      const hargaJual = Number(r[3]) || 0;
+      if (sku) hargaMap[sku] = hargaJual;
+    });
 
-const masterHarga = (data.masterHarga || []).slice(1);
-masterHarga.forEach(r => {
-const sku = r[0];
-const hargaJual = Number(r[3]) || 0;
-if (sku) hargaMap[sku] = hargaJual;
-});
+    initFilterBulan();
+    isiDropdownProduk();
 
-initFilterBulan();
-isiDropdownProduk();
-buildChartOnce();
-updateKPI();
-hideLoading();
+    buildChartOnce(); // grafik 1x
+    updateKPI();      // KPI awal
 
-})
-.catch(err => {
-console.error("API Error:", err);
-hideLoading();
-});
+    hideLoading();
+  })
+  .catch(err => {
+    console.error("API Error:", err);
+    hideLoading();
+  });
 
-/* ======================= INIT FILTER ======================= */
+/* =======================
+   INIT FILTER
+======================= */
 function initFilterBulan() {
-filterBulan.value = new Date().getUTCMonth() + 1;
+  filterBulan.value = new Date().getUTCMonth() + 1;
 }
 
 function isiDropdownProduk() {
-const setProduk = new Set();
-penjualanRaw.forEach(r => r[3] && setProduk.add(r[3]));
-[...setProduk].sort().forEach(p => {
-const opt = document.createElement("option");
-opt.value = p;
-opt.textContent = p;
-filterProduk.appendChild(opt);
-});
+  const setProduk = new Set();
+  penjualanRaw.forEach(r => r[3] && setProduk.add(r[3]));
+
+  [...setProduk].sort().forEach(p => {
+    const opt = document.createElement("option");
+    opt.value = p;
+    opt.textContent = p;
+    filterProduk.appendChild(opt);
+  });
 }
 
-/* ======================= KPI ======================= */
+/* =======================
+   KPI (TERFILTER)
+======================= */
 function updateKPI() {
 
-showLoading();
+  showLoading();
 
-setTimeout(() => {
+  setTimeout(() => {
 
-const produkDipilih = filterProduk.value;
-const bulanDipilih = filterBulan.value;
+    const produkDipilih = filterProduk.value;
+    const bulanDipilih  = filterBulan.value;
 
-const allOutlet = new Set();
-const outletTransaksi = new Set();
-const semuaProdukSet = new Set();
-const produkTerjualSet = new Set();
+    const allOutlet = new Set();
+    const outletTransaksi = new Set();
 
-const produkMap = {};
-const outletMap = {};
+    const semuaProdukSet   = new Set();
+    const produkTerjualSet = new Set();
 
-let totalQty = 0;
-let totalRp = 0;
-let totalStok = 0;
+    const produkMap = {};
+    const outletMap = {};
 
-/* MASTER OUTLET */
-masterOutlet.forEach(r => {
-if (!r[1]) return;
-const outletClean = r[1].toString().normalize("NFKC").replace(/\u00A0/g," ").trim().replace(/\s+/g," ").toUpperCase();
-if (outletClean !== "") allOutlet.add(outletClean);
-});
+    let totalQty = 0;
+    let totalRp  = 0;
+    let totalStok = 0;
 
-/* MASTER PRODUK */
-persediaan.forEach(r => {
-const produk = r[1] ? r[1].toString().normalize("NFKC").replace(/\u00A0/g," ").trim().replace(/\s+/g," ").toUpperCase() : "";
-const stok = Number(r[5]) || 0;
-if (produk) semuaProdukSet.add(produk);
-if (!produkDipilih || produk === produkDipilih) totalStok += stok;
-});
+    // =============================
+    // MASTER OUTLET
+    // =============================
+    masterOutlet.forEach(r => {
 
-/* PENJUALAN */
-penjualanRaw.forEach(r => {
+  if (!r[1]) return;
 
-const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
-const outlet = r[2] ? r[2].toString().normalize("NFKC").replace(/\u00A0/g," ").trim().replace(/\s+/g," ").toUpperCase() : "";
-const produk = r[3] ? r[3].toString().normalize("NFKC").replace(/\u00A0/g," ").trim().replace(/\s+/g," ").toUpperCase() : "";
-const qty = Number(r[4]) || 0;
-const sku = r[5];
-const harga = hargaMap[sku] || 0;
+  const outletClean = r[1]
+    .toString()
+    .normalize("NFKC")             // hapus karakter aneh
+    .replace(/\u00A0/g, " ")       // hapus non-breaking space
+    .trim()
+    .replace(/\s+/g, " ")
+    .toUpperCase();                // samakan huruf besar kecil
 
-const okProduk = !produkDipilih || produk === produkDipilih;
-const okBulan = !bulanDipilih || bulanUTC == bulanDipilih;
-
-if (okProduk && okBulan) {
-totalQty += qty;
-totalRp += qty * harga;
-produkTerjualSet.add(produk);
-outletTransaksi.add(outlet);
-produkMap[produk] = (produkMap[produk] || 0) + qty;
-}
-
-if (!bulanDipilih || bulanUTC == bulanDipilih) {
-outletMap[outlet] = (outletMap[outlet] || 0) + qty;
-}
+  if (outletClean !== "")
+    allOutlet.add(outletClean);
 
 });
 
+    // =============================
+    // MASTER PRODUK (DARI PERSEDIAAN)
+    // =============================
+    persediaan.forEach(r => {
+      const produk = r[1]
+  ? r[1]
+      .toString()
+      .normalize("NFKC")
+      .replace(/\u00A0/g, " ")
+      .trim()
+      .replace(/\s+/g, " ")
+      .toUpperCase()
+  : "";
+      const stok   = Number(r[5]) || 0;
+
+      if (produk) semuaProdukSet.add(produk);
+
+      if (!produkDipilih || produk === produkDipilih) {
+        totalStok += stok;
+      }
+    });
+
+    // =============================
+    // PENJUALAN TERFILTER
+    // =============================
+    penjualanRaw.forEach(r => {
+
+  const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
+
+  const outlet = r[2]
+  ? r[2]
+      .toString()
+      .normalize("NFKC")
+      .replace(/\u00A0/g, " ")
+      .trim()
+      .replace(/\s+/g, " ")
+      .toUpperCase()
+  : "";
+  const produk = r[3]
+  ? r[3]
+      .toString()
+      .normalize("NFKC")
+      .replace(/\u00A0/g, " ")
+      .trim()
+      .replace(/\s+/g, " ")
+      .toUpperCase()
+  : "";
+  const qty    = Number(r[4]) || 0;
+  const sku    = r[5];
+  const harga  = hargaMap[sku] || 0;
+
+  const okProduk = !produkDipilih || produk === produkDipilih;
+  const okBulan  = !bulanDipilih  || bulanUTC == bulanDipilih;
+
+  if (okProduk && okBulan) {
+
+    totalQty += qty;
+    totalRp  += qty * harga;
+
+    produkTerjualSet.add(produk);
+    outletTransaksi.add(outlet);
+
+    // 🔥 PRODUK IKUT BULAN
+    produkMap[produk] = (produkMap[produk] || 0) + qty;
+
+  }
+
+  // 🔥 OUTLET IKUT BULAN SAJA
+  if (!bulanDipilih || bulanUTC == bulanDipilih) {
+    outletMap[outlet] = (outletMap[outlet] || 0) + qty;
+  }
+
+});
+
+// Hapus outlet kosong kalau ada
 allOutlet.delete("");
 outletTransaksi.delete("");
 semuaProdukSet.delete("");
 produkTerjualSet.delete("");
 
-totalProdukTerjualEl.textContent = produkTerjualSet.size;
-totalProdukEl.textContent = semuaProdukSet.size;
-produkBelumTerjualEl.textContent = semuaProdukSet.size - produkTerjualSet.size;
-totalStokEl.textContent = totalStok;
-totalPenjualanEl.textContent = totalQty;
-totalPenjualanRpEl.textContent = "Rp " + totalRp.toLocaleString("id-ID");
-totalOutletAllEl.textContent = allOutlet.size;
-kpiOutletAktifEl.textContent = outletTransaksi.size;
-kpiOutletNonAktifEl.textContent = allOutlet.size - outletTransaksi.size;
+    // =============================
+    // UPDATE KPI
+    // =============================
 
-renderProdukChart(produkMap);
-renderOutletChart(outletMap);
-renderOutletStatus(allOutlet, outletTransaksi);
-renderProdukStatus(semuaProdukSet, produkTerjualSet);
+    totalProdukTerjualEl.textContent = produkTerjualSet.size;
+    totalProdukEl.textContent        = semuaProdukSet.size;
+    produkBelumTerjualEl.textContent = 
+        semuaProdukSet.size - produkTerjualSet.size;
 
-hideLoading();
+    totalStokEl.textContent          = totalStok;
+    totalPenjualanEl.textContent     = totalQty;
+    totalPenjualanRpEl.textContent   =
+        "Rp " + totalRp.toLocaleString("id-ID");
 
-},150);
+    totalOutletAllEl.textContent     = allOutlet.size;
+    kpiOutletAktifEl.textContent     = outletTransaksi.size;
+    kpiOutletNonAktifEl.textContent  =
+    allOutlet.size - outletTransaksi.size;
+    globalAllOutlet = new Set(allOutlet);
+    globalOutletTransaksi = new Set(outletTransaksi);
+    // =============================
+// HIDE TOTAL PRODUK JIKA FILTER PRODUK DIPILIH
+// =============================
+const produkCard = totalProdukEl.closest(".card");
+
+if (produkDipilih) {
+  produkCard.style.display = "none";
+} else {
+  produkCard.style.display = "block";
+}    
+// =============================
+// UPDATE JUDUL GRAFIK DINAMIS
+// =============================
+
+const bulanText = filterBulan.options[filterBulan.selectedIndex].text;
+
+document.querySelector("#produkChart")
+  .closest(".chart-box")
+  .querySelector("h3").textContent =
+  bulanDipilih
+    ? "Kontribusi Produk Bulan " + bulanText
+    : "Kontribusi Produk (Global)";
+
+document.querySelector("#outletChart")
+  .closest(".chart-box")
+  .querySelector("h3").textContent =
+  bulanDipilih
+    ? "Kontribusi Outlet Bulan " + bulanText
+    : "Kontribusi Outlet (Global)";
+
+    // =============================
+    // RENDER GRAFIK TAMBAHAN
+    // =============================
+    renderProdukChart(produkMap);
+    renderOutletChart(outletMap);
+
+    renderOutletStatus(allOutlet, outletTransaksi);
+    renderProdukStatus(semuaProdukSet, produkTerjualSet);
+    buildChartOnce();
+    
+    hideLoading();
+
+  }, 150);
 }
 
-/* ======================= CHART GLOBAL ======================= */
+
+
+/* =======================
+   GRAFIK (GLOBAL, 1x)
+======================= */
 function buildChartOnce() {
 
-const monthly = Array(12).fill(0);
+  const monthly = Array(12).fill(0);
 
-penjualanRaw.forEach(r => {
-const idx = new Date(r[0]).getUTCMonth();
-monthly[idx] += Number(r[4]) || 0;
-});
+  penjualanRaw.forEach(r => {
+    const idx = new Date(r[0]).getUTCMonth();
+    monthly[idx] += Number(r[4]) || 0;
+  });
 
-if (chart) chart.destroy();
+  const ctx = document.getElementById("penjualanChart");
+  if (!ctx) return;
 
-chart = new Chart(document.getElementById("penjualanChart"), {
-type: "line",
-data: {
-labels: ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"],
-datasets: [{
-label: "Total Penjualan (Global)",
-data: monthly,
-borderWidth: 2,
-tension: 0.3,
-fill: false
-}]
-},
-options: {
-responsive: true,
-maintainAspectRatio: false,
-scales: { y: { beginAtZero: true } }
+  if (chart) chart.destroy();
+
+  chart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels: ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"],
+      datasets: [{
+        label: "Total Penjualan (Global)",
+        data: monthly,
+        borderWidth: 2,
+        tension: 0.3,
+        fill: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: { beginAtZero: true }
+      }
+    }
+  });
 }
-});
-}
-
-/* ======================= GRAFIK PRODUK ======================= */
+// =======================
+// TAMBAHAN GRAFIK PRODUK
+// =======================
 function renderProdukChart(dataMap){
 
-if (!dataMap || Object.keys(dataMap).length === 0) {
-if (produkChart) produkChart.destroy();
-return;
+  if (!dataMap || Object.keys(dataMap).length === 0) {
+    if (produkChart) produkChart.destroy();
+    return;
+  }
+
+  const sorted = Object.entries(dataMap)
+    .sort((a,b)=>b[1]-a[1])
+    .slice(0,10); // TOP 10 saja biar rapi
+
+  const labels = sorted.map(x=>x[0]);
+  const data   = sorted.map(x=>x[1]);
+
+  if (produkChart) produkChart.destroy();
+
+  produkChart = new Chart(
+    document.getElementById("produkChart"),
+    {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Total Terjual",
+          data: data
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: { beginAtZero: true }
+        }
+      }
+    }
+  );
 }
-
-const sorted = Object.entries(dataMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
-const labels = sorted.map(x=>x[0]);
-const data = sorted.map(x=>x[1]);
-
-if (produkChart) produkChart.destroy();
-
-produkChart = new Chart(document.getElementById("produkChart"), {
-type: "bar",
-data: {
-labels: labels,
-datasets: [{ label: "Total Terjual", data: data }]
-},
-options: {
-responsive: true,
-maintainAspectRatio: false,
-indexAxis: 'y',
-plugins: { legend: { display: false }},
-scales: { x: { beginAtZero: true }}
-}
-});
-}
-
-/* ======================= GRAFIK OUTLET ======================= */
+// =======================
+// TAMBAHAN GRAFIK OUTLET
+// =======================
 function renderOutletChart(dataMap){
 
-if (!dataMap || Object.keys(dataMap).length === 0) {
-if (outletChart) outletChart.destroy();
-return;
+  if (!dataMap || Object.keys(dataMap).length === 0) {
+    if (outletChart) outletChart.destroy();
+    return;
+  }
+
+  const sorted = Object.entries(dataMap)
+    .sort((a,b)=>b[1]-a[1]);
+
+  let combined = [];
+
+  if (sorted.length <= 10) {
+    combined = sorted;
+  } else {
+    const top5 = sorted.slice(0,5);
+    const bottom5 = sorted.slice(-5);
+    combined = [...top5, ...bottom5];
+  }
+
+  const labels = combined.map(x=>x[0]);
+  const data   = combined.map(x=>x[1]);
+
+  if (outletChart) outletChart.destroy();
+
+  outletChart = new Chart(
+    document.getElementById("outletChart"),
+    {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [{
+          label: "Total Pembelian",
+          data: data
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        indexAxis: 'y',
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          x: { beginAtZero: true }
+        }
+      }
+    }
+  );
 }
+// =======================
+// FUNCTION RENDER OUTLET 
+// =======================
+function renderOutletStatus(allOutlet, outletTransaksi) {
 
-const sorted = Object.entries(dataMap).sort((a,b)=>b[1]-a[1]);
-let combined = [];
+  listOutletStatus.innerHTML = "";
+  const statusFilter = filterStatusOutlet.value;
 
-if (sorted.length <= 10) combined = sorted;
-else combined = [...sorted.slice(0,5), ...sorted.slice(-5)];
+  // 🔥 Simpan untuk export
+  lastOutletStatus = [];
 
-const labels = combined.map(x=>x[0]);
-const data = combined.map(x=>x[1]);
+  const sortedOutlet = [...allOutlet].sort();
 
-if (outletChart) outletChart.destroy();
+  sortedOutlet.forEach(outlet => {
 
-outletChart = new Chart(document.getElementById("outletChart"), {
-type: "bar",
-data: {
-labels: labels,
-datasets: [{ label: "Total Pembelian", data: data }]
-},
-options: {
-responsive: true,
-maintainAspectRatio: false,
-indexAxis: 'y',
-plugins: { legend: { display: false }},
-scales: { x: { beginAtZero: true }}
+    const isAktif = outletTransaksi.has(outlet);
+
+    // Filter dropdown
+    if (statusFilter === "aktif" && !isAktif) return;
+    if (statusFilter === "nonaktif" && isAktif) return;
+
+    // 🔥 Simpan data yang tampil (untuk CSV)
+    lastOutletStatus.push({
+      Outlet: outlet,
+      Status: isAktif ? "Sudah Transaksi" : "Belum Transaksi"
+    });
+
+    const div = document.createElement("div");
+    div.className = "outlet-row";
+
+    div.innerHTML = `
+      <span>${outlet}</span>
+      <span class="${isAktif ? 'badge-hijau' : 'badge-merah'}">
+        ${isAktif ? 'Sudah Transaksi' : 'Belum Transaksi'}
+      </span>
+    `;
+
+    listOutletStatus.appendChild(div);
+  });
+
+  // Kalau kosong
+  if (lastOutletStatus.length === 0) {
+    listOutletStatus.innerHTML = `
+      <div style="padding:10px;color:#777;">
+        Tidak ada data sesuai filter
+      </div>
+    `;
+  }
 }
-});
-}
+// =======================
+// FUNCTION RENDER PRODUK 
+// =======================
+function renderProdukStatus(semuaProdukSet, produkTerjualSet) {
 
-/* ======================= EVENT ======================= */
+  listProdukStatus.innerHTML = "";
+
+  // 🔥 Filter produk belum terjual
+  const belumTerjual = [...semuaProdukSet]
+    .filter(p => !produkTerjualSet.has(p))
+    .sort();
+
+  // 🔥 Simpan untuk export CSV
+  lastProdukBelumTerjual = [];
+
+  if (belumTerjual.length === 0) {
+
+    listProdukStatus.innerHTML = `
+      <div style="padding:10px;color:green;font-weight:600;">
+        Semua Produk Sudah Terjual ✅
+      </div>
+    `;
+
+    return;
+  }
+
+  belumTerjual.forEach(produk => {
+
+    // 🔥 Simpan data untuk export
+    lastProdukBelumTerjual.push({
+      Produk: produk,
+      Status: "Belum Terjual"
+    });
+
+    const div = document.createElement("div");
+    div.className = "outlet-row";
+
+    div.innerHTML = `
+      <span>${produk}</span>
+      <span class="badge-merah">
+        Belum Terjual
+      </span>
+    `;
+
+    listProdukStatus.appendChild(div);
+  });
+}
+/* =======================
+   EVENT
+======================= */
 filterProduk.addEventListener("change", updateKPI);
 filterBulan.addEventListener("change", updateKPI);
 filterStatusOutlet.addEventListener("change", updateKPI);
 
-</script>
+/* =======================
+   EXPORT CSV SYSTEM (FINAL)
+======================= */
 
+// Universal CSV Downloader
+function downloadCSV(filename, rows) {
+
+  if (!rows || rows.length === 0) {
+    alert("Tidak ada data untuk diexport");
+    return;
+  }
+
+  const header = Object.keys(rows[0]).join(",");
+  const body = rows.map(row => Object.values(row).join(",")).join("\n");
+
+  const csvContent = "data:text/csv;charset=utf-8," + header + "\n" + body;
+
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", filename);
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+
+exportProdukBtn.addEventListener("click", () => {
+
+  const bulanDipilih = filterBulan.value;
+  const today = new Date();
+
+  const produkMap = {};
+  const lastSaleMap = {};
+  const stokMap = {};
+  const produkAnalisa = [];
+
+  // Ambil stok
+  persediaan.forEach(r => {
+    const produk = r[1]
+      ? r[1].toString().trim().toUpperCase()
+      : "";
+    const stok = Number(r[5]) || 0;
+
+    if (produk !== "") {
+      stokMap[produk] = (stokMap[produk] || 0) + stok;
+    }
+  });
+
+  // Loop transaksi
+  penjualanRaw.forEach(r => {
+
+    const produk = r[3]
+      ? r[3].toString().trim().toUpperCase()
+      : "";
+    const qty = Number(r[4]) || 0;
+    const tgl = new Date(r[0]);
+    const bulanUTC = tgl.getUTCMonth() + 1;
+
+    if (produk === "") return;
+
+    // 🔥 Total bulan terfilter
+    if (!bulanDipilih || bulanUTC == bulanDipilih) {
+      produkMap[produk] = (produkMap[produk] || 0) + qty;
+    }
+
+    // 🔥 Last sale tetap global
+    if (!lastSaleMap[produk] || tgl > lastSaleMap[produk]) {
+      lastSaleMap[produk] = tgl;
+    }
+
+  });
+
+  Object.keys(stokMap).forEach(produk => {
+
+    const totalTerjual = produkMap[produk] || 0;
+    const stok = stokMap[produk] || 0;
+    const lastSale = lastSaleMap[produk] || null;
+
+    let hariTanpaJual = "";
+    let kategori = "";
+    let rekomendasi = "";
+
+    if (!lastSale) {
+      kategori = "Dead Stock";
+      rekomendasi = "bundling";
+    } else {
+      hariTanpaJual = Math.floor((today - lastSale) / (1000*60*60*24));
+
+      if (hariTanpaJual > 90) {
+        kategori = "Slow Moving";
+        rekomendasi = "Evaluasi";
+      } else {
+        kategori = "Normal";
+        rekomendasi = "Monitor";
+      }
+    }
+
+    // 🔥 hanya export produk yg tidak terjual di bulan tsb
+    if (totalTerjual === 0) {
+
+      produkAnalisa.push({
+        Produk: produk,
+        Stok: stok,
+        Total_Terjual_Bulan: totalTerjual,
+        Terakhir_Terjual: lastSale ? lastSale.toISOString().split("T")[0] : "Tidak Pernah",
+        Hari_Tanpa_Penjualan: hariTanpaJual,
+        Kategori: kategori,
+        Rekomendasi: rekomendasi
+      });
+
+    }
+
+  });
+
+  downloadCSV("analisa_produk_bulan.csv", produkAnalisa);
+
+});
+
+
+/* =======================
+   EXPORT ANALISA OUTLET
+======================= */
+
+exportOutletBtn.addEventListener("click", () => {
+
+  const produkDipilih = filterProduk.value;
+  const bulanDipilih  = filterBulan.value;
+  const today = new Date();
+
+  const allOutlet = new Set();
+  const outletTransaksi = new Set();
+
+  // ===== MASTER OUTLET (SAMA PERSIS DENGAN KPI) =====
+  masterOutlet.forEach(r => {
+
+    if (!r[1]) return;
+
+    const outletClean = r[1]
+      .toString()
+      .normalize("NFKC")
+      .replace(/\u00A0/g, " ")
+      .trim()
+      .replace(/\s+/g, " ")
+      .toUpperCase();
+
+    if (outletClean !== "")
+      allOutlet.add(outletClean);
+
+  });
+
+  // ===== HITUNG TRANSAKSI SESUAI FILTER (SAMA PERSIS KPI) =====
+  penjualanRaw.forEach(r => {
+
+    const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
+
+    const outlet = r[2]
+      ? r[2]
+          .toString()
+          .normalize("NFKC")
+          .replace(/\u00A0/g, " ")
+          .trim()
+          .replace(/\s+/g, " ")
+          .toUpperCase()
+      : "";
+
+    const produk = r[3]
+      ? r[3]
+          .toString()
+          .normalize("NFKC")
+          .replace(/\u00A0/g, " ")
+          .trim()
+          .replace(/\s+/g, " ")
+          .toUpperCase()
+      : "";
+
+    const okProduk = !produkDipilih || produk === produkDipilih;
+    const okBulan  = !bulanDipilih  || bulanUTC == bulanDipilih;
+
+    if (okProduk && okBulan) {
+      outletTransaksi.add(outlet);
+    }
+
+  });
+
+  // ===== BUAT CSV SESUAI KPI =====
+  const outletAnalisa = [];
+
+  allOutlet.forEach(outlet => {
+
+    if (!outletTransaksi.has(outlet)) {
+
+      // cari last order global
+      let lastOrder = null;
+
+      penjualanRaw.forEach(r => {
+
+        const outletData = r[2]
+          ? r[2]
+              .toString()
+              .normalize("NFKC")
+              .replace(/\u00A0/g, " ")
+              .trim()
+              .replace(/\s+/g, " ")
+              .toUpperCase()
+          : "";
+
+        if (outletData === outlet) {
+
+          const tgl = new Date(r[0]);
+
+          if (!lastOrder || tgl > lastOrder) {
+            lastOrder = tgl;
+          }
+
+        }
+
+      });
+
+      let hariTidakOrder = "";
+      let kategori = "";
+      let rekomendasi = "";
+
+      if (!lastOrder) {
+        kategori = "Baru";
+        rekomendasi = "Belum pernah transaksi";
+      } else {
+
+        hariTidakOrder = Math.floor((today - lastOrder) / (1000*60*60*24));
+
+        if (hariTidakOrder > 90) {
+          kategori = "Risiko Drop";
+          rekomendasi = "Follow up segera";
+        } else if (hariTidakOrder > 30) {
+          kategori = "Perlu Follow Up";
+          rekomendasi = "Hubungi outlet";
+        } else {
+          kategori = "Normal";
+          rekomendasi = "Monitor";
+        }
+      }
+
+      outletAnalisa.push({
+        Outlet: outlet,
+        Terakhir_Order: lastOrder ? lastOrder.toISOString().split("T")[0] : "Tidak Pernah",
+        Hari_Tidak_Order: hariTidakOrder,
+        Kategori: kategori,
+        Rekomendasi: rekomendasi
+      });
+
+    }
+
+  });
+
+  downloadCSV("analisa_outlet_tidak_transaksi.csv", outletAnalisa);
+
+});
+
+ 
+
+</script>
 </body>
+
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
