@@ -37,9 +37,19 @@
                 <div class="filter-bar">
                     
   <div class="filter-bar">
-  <input type="text" id="searchStock" placeholder="Cari SKU atau Nama Produk">
-</div>
 
+  <!-- SEARCHABLE DROPDOWN PRODUK -->
+  <div class="custom-select">
+    <input 
+      type="text" 
+      id="searchStock" 
+      placeholder="Cari produk..."
+      autocomplete="off"
+    >
+    <div id="produkDropdown" class="dropdown-list"></div>
+  </div>
+
+  <!-- FILTER BULAN -->
   <select id="filterBulan">
     <option value="">Semua Bulan</option>
     <option value="1">Januari</option>
@@ -55,6 +65,7 @@
     <option value="11">November</option>
     <option value="12">Desember</option>
   </select>
+
 </div>
             </header>
 
@@ -169,7 +180,7 @@ const API_URL = "https://script.google.com/macros/s/AKfycbzY3q9H0Rh-j4xq3rQmfyNi
    ELEMENT
 ======================= */
 const searchStock = document.getElementById("searchStock");
-const filterProduk = document.getElementById("filterProduk");
+const produkDropdown = document.getElementById("produkDropdown");
 const filterBulan  = document.getElementById("filterBulan");
 const loading      = document.getElementById("loading");
 
@@ -193,6 +204,7 @@ const exportOutletBtn = document.getElementById("exportOutletCSV");
 /* =======================
    STATE
 ======================= */
+let allProdukList = [];
 let penjualanRaw   = [];
 let persediaan     = [];
 let hargaMap       = {};
@@ -261,16 +273,64 @@ function initFilterBulan() {
 }
 
 function isiDropdownProduk() {
-  const setProduk = new Set();
-  penjualanRaw.forEach(r => r[3] && setProduk.add(r[3]));
 
-  [...setProduk].sort().forEach(p => {
-    const opt = document.createElement("option");
-    opt.value = p;
-    opt.textContent = p;
-    filterProduk.appendChild(opt);
+  const setProduk = new Set();
+
+  penjualanRaw.forEach(r => {
+    if (r[3]) setProduk.add(r[3]);
   });
+
+  allProdukList = [...setProduk].sort();
+
 }
+searchStock.addEventListener("input", function() {
+
+  const keyword = this.value.toLowerCase().trim();
+
+  produkDropdown.innerHTML = "";
+
+  if (!keyword) {
+    produkDropdown.style.display = "none";
+    updateKPI(); // kosong = tampil semua
+    return;
+  }
+
+  const filtered = allProdukList.filter(p =>
+    p.toLowerCase().includes(keyword)
+  );
+
+  if (filtered.length === 0) {
+    produkDropdown.style.display = "none";
+    return;
+  }
+
+  filtered.slice(0, 20).forEach(p => {
+
+    const div = document.createElement("div");
+    div.className = "dropdown-item";
+    div.textContent = p;
+
+    div.addEventListener("click", () => {
+      searchStock.value = p;
+      produkDropdown.style.display = "none";
+      updateKPI();
+    });
+
+    produkDropdown.appendChild(div);
+
+  });
+
+  produkDropdown.style.display = "block";
+
+});
+
+       document.addEventListener("click", function(e) {
+
+  if (!e.target.closest(".custom-select")) {
+    produkDropdown.style.display = "none";
+  }
+
+});
 
 /* =======================
    KPI (TERFILTER)
@@ -929,6 +989,7 @@ exportOutletBtn.addEventListener("click", () => {
 </body>
 
 </html>
+
 
 
 
