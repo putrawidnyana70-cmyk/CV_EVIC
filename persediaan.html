@@ -139,6 +139,8 @@ let masterProduk = [];
 let pembelian = [];
 let penjualan = [];
 let kategoriAktif = "";
+let masterHarga = [];
+let hargaMap = {};
 
 /* ================= LOADING ================= */
 function showLoading(){ loading.style.display="flex"; }
@@ -168,6 +170,19 @@ fetch(API_URL)
   masterProduk = data.masterProduk || [];
   pembelian = data.pembelian || [];
   penjualan = data.penjualan || [];
+  masterHarga = data.masterHarga || [];
+
+// Buat mapping harga beli berdasarkan SKU
+masterHarga.forEach((row, idx)=>{
+  if(idx===0) return; // skip header
+
+  const sku = String(row[0] || "").trim();
+  const hargaBeli = Number(row[2]) || 0;
+
+  if(sku){
+    hargaMap[sku] = hargaBeli;
+  }
+});
 
   const now = new Date();
   filterBulan.value = String(now.getMonth()+1);
@@ -190,33 +205,18 @@ function parseSheetDate(tgl){
   return null;
 }
 
-/* ================= FORECAST ================= */
-function hitungForecastPerProduk(sku,bulanAktif){
 
-  let total=0,count=0;
-
-  for(let b=bulanAktif-3;b<bulanAktif;b++){
-    if(b<=0) continue;
-    let totalB=0;
-
-    penjualan.forEach(p=>{
-      const d=parseSheetDate(p[0]);
-      if(!d || d.tahun!==TAHUN_AKTIF) return;
-      if(String(p[5]).trim()!==sku) return;
-      if(d.bulan===b) totalB+=Number(p[4])||0;
-    });
-
-    if(totalB>0){ total+=totalB; count++; }
-  }
-
-  if(count===0) return 0;
-  return Math.round(total/count);
-}
 
 /* ================= RENDER ================= */
 function render(){
 
   tbody.innerHTML="";
+ // ===== KPI INIT =====
+let totalSKU = 0;
+let totalStokAkhir = 0;
+let totalMasuk = 0;
+let totalKeluar = 0;
+let totalNilai = 0;
   const bulanDipilih=Number(filterBulan.value)||1;
 
   masterProduk.forEach((mp,idx)=>{
@@ -260,9 +260,15 @@ function render(){
       stok+=beli-jual;
     }
 
-    const forecast=hitungForecastPerProduk(sku,bulanDipilih);
-    const restock=Math.max(forecast-stok,0);
+// ===== HITUNG KPI =====
+const hargaBeli = hargaMap[sku] || 0;
 
+totalSKU++;
+totalStokAkhir += stok;
+totalMasuk += masuk;
+totalKeluar += keluar;
+totalNilai += stok * hargaBeli;
+      
     tbody.innerHTML+=`
 <tr>
 <td>${sku}</td>
@@ -271,10 +277,14 @@ function render(){
 <td>${masuk}</td>
 <td>${keluar}</td>
 <td><b>${stok}</b></td>
-<td>${forecast}</td>
-<td style="color:${restock>0?'red':'green'}">${restock}</td>
 </tr>`;
   });
+// ===== UPDATE KPI CARD =====
+document.getElementById("kpiSKU").innerText = totalSKU;
+document.getElementById("kpiStok").innerText = totalStokAkhir.toLocaleString("id-ID");
+document.getElementById("kpiMasuk").innerText = totalMasuk.toLocaleString("id-ID");
+document.getElementById("kpiKeluar").innerText = totalKeluar.toLocaleString("id-ID");
+document.getElementById("kpiNilai").innerText = "Rp " + totalNilai.toLocaleString("id-ID");
 
   applySearch();
 }
@@ -522,6 +532,7 @@ document.querySelectorAll(".btn-kategori").forEach(btn=>{
 </body>
 
 </html>
+
 
 
 
