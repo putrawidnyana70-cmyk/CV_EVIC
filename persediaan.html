@@ -34,6 +34,35 @@
             <h1>Persediaan</h1>
             <p>Daftar stok produk</p>
         </header>
+<!-- KPI CARDS -->
+<div class="cards" id="kpiCards">
+
+  <div class="card">
+    <h3>Total SKU Aktif</h3>
+    <span id="kpiSKU">0</span>
+  </div>
+
+  <div class="card">
+    <h3>Total Stok Akhir</h3>
+    <span id="kpiStok">0</span>
+  </div>
+
+  <div class="card">
+    <h3>Total Stok Masuk</h3>
+    <span id="kpiMasuk">0</span>
+  </div>
+
+  <div class="card">
+    <h3>Total Stok Keluar</h3>
+    <span id="kpiKeluar">0</span>
+  </div>
+
+  <div class="card">
+    <h3>Total Nilai Persediaan</h3>
+    <span id="kpiNilai">Rp 0</span>
+  </div>
+
+</div>
 
         <!-- SEARCH -->
         <div class="filter-bar">
@@ -82,8 +111,6 @@
   <th>Stok Masuk</th>
   <th>Stok Keluar</th>
   <th>Stok Akhir</th>
-  <th>Forecast</th>
-  <th>Restock</th>
 </tr>
 </thead>
                 <tbody id="stokBody">
@@ -495,6 +522,7 @@ document.querySelectorAll(".btn-kategori").forEach(btn=>{
 </body>
 
 </html>
+
 
 
 
