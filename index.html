@@ -171,38 +171,30 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
  <script>
-/* =======================
-   KONFIGURASI
-======================= */
+/* ======================= KONFIGURASI ======================= */
 const API_URL = "https://script.google.com/macros/s/AKfycbzY3q9H0Rh-j4xq3rQmfyNiQBTRS_nECuWwouBEeNXMCDQwYHtBAj6Sic9KQ6P5aW7x/exec";
 
-/* =======================
-   ELEMENT
-======================= */
-const searchStock = document.getElementById("searchStock");
-const produkDropdown = document.getElementById("produkDropdown");
-const filterBulan  = document.getElementById("filterBulan");
-const loading      = document.getElementById("loading");
+/* ======================= ELEMENT ======================= */
+const filterProduk = document.getElementById("filterProduk");
+const filterBulan = document.getElementById("filterBulan");
+const loading = document.getElementById("loading");
 
-const totalProdukEl       = document.getElementById("totalProduk");
-const totalStokEl         = document.getElementById("totalStok");
-const totalPenjualanEl    = document.getElementById("totalPenjualan");
-const totalPenjualanRpEl  = document.getElementById("totalPenjualanRp");
-const kpiOutletAktifEl    = document.getElementById("kpiOutletAktif");
+const totalProdukEl = document.getElementById("totalProduk");
+const totalStokEl = document.getElementById("totalStok");
+const totalPenjualanEl = document.getElementById("totalPenjualan");
+const totalPenjualanRpEl = document.getElementById("totalPenjualanRp");
+const kpiOutletAktifEl = document.getElementById("kpiOutletAktif");
 const kpiOutletNonAktifEl = document.getElementById("kpiOutletNonAktif");
-const filterStatusOutlet  = document.getElementById("filterStatusOutlet");
-const listOutletStatus    = document.getElementById("listOutletStatus");
+const filterStatusOutlet = document.getElementById("filterStatusOutlet");
+const listOutletStatus = document.getElementById("listOutletStatus");
 const totalProdukTerjualEl = document.getElementById("totalProdukTerjual");
 const produkBelumTerjualEl = document.getElementById("produkBelumTerjual");
-const totalOutletAllEl     = document.getElementById("totalOutletAll");
+const totalOutletAllEl = document.getElementById("totalOutletAll");
 const listProdukStatus = document.getElementById("listProdukStatus");
 const exportProdukBtn = document.getElementById("exportProdukCSV");
 const exportOutletBtn = document.getElementById("exportOutletCSV");
 
-/* =======================
-   STATE
-======================= */
-let allProdukList = [];
+/* ======================= STATE ======================= */
 let penjualanRaw = [];
 let persediaan = [];
 let hargaMap = {};
@@ -211,32 +203,30 @@ let masterOutlet = [];
 let produkChart = null;
 let outletChart = null;
 
-/* =======================
-   LOADING
-======================= */
-function showLoading() {
-  loading.style.display = "flex";
+/* ======================= LOADING ======================= */
+function showLoading(){
+  loading.style.display="flex";
 }
-function hideLoading() {
-  loading.style.display = "none";
+function hideLoading(){
+  loading.style.display="none";
 }
 
-/* =======================
-   FETCH DATA
-======================= */
+/* ======================= FETCH ======================= */
 showLoading();
 
 fetch(API_URL)
-.then(res => res.json())
-.then(data => {
+.then(res=>res.json())
+.then(data=>{
 
-  penjualanRaw = (data.penjualan || []).slice(1);
-  persediaan   = (data.persediaan || []).slice(1);
-  masterOutlet = (data.masterOutlet || []).slice(1);
+  penjualanRaw = (data.penjualan||[]).slice(1);
+  persediaan = (data.persediaan||[]).slice(1);
+  masterOutlet = (data.masterOutlet||[]).slice(1);
 
-  const masterHarga = (data.masterHarga || []).slice(1);
-  masterHarga.forEach(r => {
-    if (r[0]) hargaMap[r[0]] = Number(r[3]) || 0;
+  const masterHarga = (data.masterHarga||[]).slice(1);
+  masterHarga.forEach(r=>{
+    const sku=r[0];
+    const harga=Number(r[3])||0;
+    if(sku) hargaMap[sku]=harga;
   });
 
   initFilterBulan();
@@ -245,172 +235,104 @@ fetch(API_URL)
   updateKPI();
 
   hideLoading();
-})
-.catch(err => {
-  console.error("API Error:", err);
-  hideLoading();
 });
 
-/* =======================
-   INIT
-======================= */
-function initFilterBulan() {
-  filterBulan.value = new Date().getUTCMonth() + 1;
+/* ======================= INIT ======================= */
+function initFilterBulan(){
+  filterBulan.value=new Date().getUTCMonth()+1;
 }
 
-function isiDropdownProduk() {
-  const setProduk = new Set();
-  penjualanRaw.forEach(r => {
-    if (r[3]) setProduk.add(r[3]);
+function isiDropdownProduk(){
+  const setProduk=new Set();
+  penjualanRaw.forEach(r=>{
+    if(r[3]) setProduk.add(r[3].toString().trim().toUpperCase());
   });
-  allProdukList = [...setProduk].sort();
+
+  [...setProduk].sort().forEach(p=>{
+    const opt=document.createElement("option");
+    opt.value=p;
+    opt.textContent=p;
+    filterProduk.appendChild(opt);
+  });
 }
 
-/* =======================
-   DROPDOWN SEARCH (FIXED)
-======================= */
-let typingTimer;
+/* ======================= KPI ======================= */
+function updateKPI(){
 
-searchStock.addEventListener("input", function() {
+  const produkDipilih = filterProduk.value ? filterProduk.value.toUpperCase() : "";
+  const bulanDipilih = filterBulan.value;
 
-  clearTimeout(typingTimer);
+  const semuaProdukSet=new Set();
+  const produkTerjualSet=new Set();
+  const allOutlet=new Set();
+  const outletTransaksi=new Set();
 
-  typingTimer = setTimeout(() => {
+  let totalQty=0;
+  let totalRp=0;
+  let totalStok=0;
 
-    const keyword = this.value.toLowerCase().trim();
-    produkDropdown.innerHTML = "";
+  /* ===== MASTER PRODUK ===== */
+  persediaan.forEach(r=>{
+    const produk=r[1] ? r[1].toString().trim().toUpperCase() : "";
+    const stok=Number(r[5])||0;
 
-    if (!keyword) {
-      produkDropdown.style.display = "none";
-      updateKPI();
-      return;
+    if(produk) semuaProdukSet.add(produk);
+
+    if(!produkDipilih || produk===produkDipilih){
+      totalStok+=stok;
     }
+  });
 
-    const filtered = allProdukList.filter(p =>
-      p.toLowerCase().includes(keyword)
-    );
+  /* ===== MASTER OUTLET ===== */
+  masterOutlet.forEach(r=>{
+    const outlet=r[1] ? r[1].toString().trim().toUpperCase() : "";
+    if(outlet) allOutlet.add(outlet);
+  });
 
-    filtered.slice(0,20).forEach(p => {
+  /* ===== PENJUALAN ===== */
+  penjualanRaw.forEach(r=>{
+    const bulanUTC=new Date(r[0]).getUTCMonth()+1;
+    const outlet=r[2] ? r[2].toString().trim().toUpperCase() : "";
+    const produk=r[3] ? r[3].toString().trim().toUpperCase() : "";
+    const qty=Number(r[4])||0;
+    const harga=hargaMap[r[5]]||0;
 
-      const div = document.createElement("div");
-      div.className = "dropdown-item";
-      div.textContent = p;
+    const okProduk=!produkDipilih || produk===produkDipilih;
+    const okBulan=!bulanDipilih || bulanUTC==bulanDipilih;
 
-      div.onclick = () => {
-        searchStock.value = p;
-        produkDropdown.style.display = "none";
-        updateKPI();
-      };
+    if(okProduk && okBulan){
+      totalQty+=qty;
+      totalRp+=qty*harga;
+      produkTerjualSet.add(produk);
+      outletTransaksi.add(outlet);
+    }
+  });
 
-      produkDropdown.appendChild(div);
-    });
+  /* ===== UPDATE KPI ===== */
+  totalProdukEl.textContent=semuaProdukSet.size;
+  totalProdukTerjualEl.textContent=produkTerjualSet.size;
+  produkBelumTerjualEl.textContent=
+    semuaProdukSet.size-produkTerjualSet.size;
 
-    produkDropdown.style.display = filtered.length ? "block" : "none";
+  totalStokEl.textContent=totalStok;
+  totalPenjualanEl.textContent=totalQty;
+  totalPenjualanRpEl.textContent=
+    "Rp "+totalRp.toLocaleString("id-ID");
 
-  }, 250);
-
-});
-
-document.addEventListener("click", e => {
-  if (!e.target.closest(".custom-select")) {
-    produkDropdown.style.display = "none";
-  }
-});
-
-/* =======================
-   KPI (TIDAK DIUBAH)
-======================= */
-function updateKPI() {
-
-  showLoading();
-
-  setTimeout(() => {
-
-    const produkDipilih = searchStock.value;
-    const bulanDipilih  = filterBulan.value;
-
-    const allOutlet = new Set();
-    const outletTransaksi = new Set();
-    const semuaProdukSet = new Set();
-    const produkTerjualSet = new Set();
-
-    const produkMap = {};
-    const outletMap = {};
-
-    let totalQty = 0;
-    let totalRp  = 0;
-    let totalStok = 0;
-
-    masterOutlet.forEach(r => {
-      if (!r[1]) return;
-      const outletClean = r[1].toString().trim().toUpperCase();
-      if (outletClean !== "") allOutlet.add(outletClean);
-    });
-
-    persediaan.forEach(r => {
-      const produk = r[1] ? r[1].toString().trim().toUpperCase() : "";
-      const stok   = Number(r[5]) || 0;
-      if (produk) semuaProdukSet.add(produk);
-      if (!produkDipilih || produk.includes(produkDipilih.toUpperCase()))
-        totalStok += stok;
-    });
-
-    penjualanRaw.forEach(r => {
-
-      const bulanUTC = new Date(r[0]).getUTCMonth() + 1;
-      const outlet = r[2] || "";
-      const produk = r[3] || "";
-      const qty = Number(r[4]) || 0;
-      const sku = r[5];
-      const harga = hargaMap[sku] || 0;
-
-      const okProduk =
-        !produkDipilih ||
-        produk.toLowerCase().includes(produkDipilih.toLowerCase());
-
-      const okBulan =
-        !bulanDipilih || bulanUTC == bulanDipilih;
-
-      if (okProduk && okBulan) {
-        totalQty += qty;
-        totalRp  += qty * harga;
-        produkTerjualSet.add(produk);
-        outletTransaksi.add(outlet);
-        produkMap[produk] = (produkMap[produk] || 0) + qty;
-      }
-
-      if (!bulanDipilih || bulanUTC == bulanDipilih) {
-        outletMap[outlet] = (outletMap[outlet] || 0) + qty;
-      }
-
-    });
-
-    totalProdukTerjualEl.textContent = produkTerjualSet.size;
-    totalProdukEl.textContent = semuaProdukSet.size;
-    produkBelumTerjualEl.textContent =
-      semuaProdukSet.size - produkTerjualSet.size;
-
-    totalStokEl.textContent = totalStok;
-    totalPenjualanEl.textContent = totalQty;
-    totalPenjualanRpEl.textContent =
-      "Rp " + totalRp.toLocaleString("id-ID");
-
-    totalOutletAllEl.textContent = allOutlet.size;
-    kpiOutletAktifEl.textContent = outletTransaksi.size;
-    kpiOutletNonAktifEl.textContent =
-      allOutlet.size - outletTransaksi.size;
-
-    renderProdukChart(produkMap);
-    renderOutletChart(outletMap);
-
-    hideLoading();
-
-  }, 150);
+  totalOutletAllEl.textContent=allOutlet.size;
+  kpiOutletAktifEl.textContent=outletTransaksi.size;
+  kpiOutletNonAktifEl.textContent=
+    allOutlet.size-outletTransaksi.size;
 }
+
+/* ======================= EVENT ======================= */
+filterProduk.addEventListener("change",updateKPI);
+filterBulan.addEventListener("change",updateKPI);
 </script>
 </body>
 
 </html>
+
 
 
 
